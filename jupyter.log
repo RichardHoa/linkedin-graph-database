@@ -1,0 +1,74 @@
+nohup: ignoring input
+[I 2026-03-02 10:25:29.097 ServerApp] jupyter_lsp | extension was successfully linked.
+[I 2026-03-02 10:25:29.102 ServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2026-03-02 10:25:29.106 ServerApp] jupyterlab | extension was successfully linked.
+[I 2026-03-02 10:25:29.109 ServerApp] notebook | extension was successfully linked.
+[I 2026-03-02 10:25:29.419 ServerApp] notebook_shim | extension was successfully linked.
+[I 2026-03-02 10:25:29.420 ServerApp] panel.io.jupyter_server_extension | extension was successfully linked.
+[I 2026-03-02 10:25:29.432 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2026-03-02 10:25:29.434 ServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2026-03-02 10:25:29.434 ServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2026-03-02 10:25:29.436 LabApp] JupyterLab extension loaded from /home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab
+[I 2026-03-02 10:25:29.436 LabApp] JupyterLab application directory is /home/danghoa/graph-database/jupyter_env/share/jupyter/lab
+[I 2026-03-02 10:25:29.437 LabApp] Extension Manager is 'pypi'.
+[I 2026-03-02 10:25:29.501 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2026-03-02 10:25:29.504 ServerApp] notebook | extension was successfully loaded.
+[I 2026-03-02 10:25:29.505 ServerApp] panel.io.jupyter_server_extension | extension was successfully loaded.
+[I 2026-03-02 10:25:29.505 ServerApp] Serving notebooks from local directory: /home/danghoa/graph-database
+[I 2026-03-02 10:25:29.505 ServerApp] Jupyter Server 2.17.0 is running at:
+[I 2026-03-02 10:25:29.505 ServerApp] http://linkedInGraphDatabase:8888/lab?token=e4a797028ee0849ee97739fa22080ead6c752a66ee508d3c
+[I 2026-03-02 10:25:29.505 ServerApp]     http://127.0.0.1:8888/lab?token=e4a797028ee0849ee97739fa22080ead6c752a66ee508d3c
+[I 2026-03-02 10:25:29.505 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 2026-03-02 10:25:29.507 ServerApp] 
+    
+    To access the server, open this file in a browser:
+        file:///home/danghoa/.local/share/jupyter/runtime/jpserver-14983-open.html
+    Or copy and paste one of these URLs:
+        http://linkedInGraphDatabase:8888/lab?token=e4a797028ee0849ee97739fa22080ead6c752a66ee508d3c
+        http://127.0.0.1:8888/lab?token=e4a797028ee0849ee97739fa22080ead6c752a66ee508d3c
+[I 2026-03-02 10:25:29.608 ServerApp] Skipped non-installed server(s): basedpyright, bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyrefly, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[I 2026-03-02 10:25:32.288 LabApp] Build is up to date
+[I 2026-03-02 10:25:32.598 ServerApp] Kernel started: 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52
+[I 2026-03-02 10:25:32.605 ServerApp] Kernel started: ced96f6a-9a19-42b1-925b-8f68963e76a0
+[I 2026-03-02 10:25:33.172 ServerApp] Adapting from protocol version 5.3 (kernel ced96f6a-9a19-42b1-925b-8f68963e76a0) to 5.4 (client).
+[I 2026-03-02 10:25:33.173 ServerApp] Connecting to kernel ced96f6a-9a19-42b1-925b-8f68963e76a0.
+[W 2026-03-02 10:25:33.174 ServerApp] The websocket_ping_timeout (90000) cannot be longer than the websocket_ping_interval (30000).
+    Setting websocket_ping_timeout=30000
+[I 2026-03-02 10:25:33.219 ServerApp] Starting buffering for ced96f6a-9a19-42b1-925b-8f68963e76a0:49a75c7e-b33c-45d2-af28-12d14d26d0b2
+[I 2026-03-02 10:25:33.222 ServerApp] Adapting from protocol version 5.3 (kernel 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52) to 5.4 (client).
+[I 2026-03-02 10:25:33.223 ServerApp] Connecting to kernel 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52.
+[I 2026-03-02 10:25:33.264 ServerApp] Adapting from protocol version 5.3 (kernel ced96f6a-9a19-42b1-925b-8f68963e76a0) to 5.4 (client).
+[I 2026-03-02 10:25:33.264 ServerApp] Connecting to kernel ced96f6a-9a19-42b1-925b-8f68963e76a0.
+[I 2026-03-02 10:25:33.297 ServerApp] Adapting from protocol version 5.3 (kernel ced96f6a-9a19-42b1-925b-8f68963e76a0) to 5.4 (client).
+[I 2026-03-02 10:25:33.299 ServerApp] Connecting to kernel ced96f6a-9a19-42b1-925b-8f68963e76a0.
+[I 2026-03-02 10:28:47.512 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 10:31:49.670 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 10:33:00.362 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 10:33:30.575 ServerApp] Saving file at /notebooks/AI.ipynb
+Traceback (most recent call last):
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 3678, in _complete
+    result = matcher(context)
+             ^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2214, in file_matcher
+    code_until_cursor = self._extract_code(context.text_until_cursor)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2316, in _extract_code
+    maybe_magic, *rest = line.split(maxsplit=1)
+    ^^^^^^^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected at least 1, got 0)
+[I 2026-03-02 10:37:05.586 ServerApp] Saving file at /notebooks/AI.ipynb
+Traceback (most recent call last):
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 3678, in _complete
+    result = matcher(context)
+             ^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2214, in file_matcher
+    code_until_cursor = self._extract_code(context.text_until_cursor)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2316, in _extract_code
+    maybe_magic, *rest = line.split(maxsplit=1)
+    ^^^^^^^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected at least 1, got 0)
+[I 2026-03-02 10:37:10.192 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 10:37:36.333 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 10:38:06.577 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 10:39:06.668 ServerApp] Saving file at /notebooks/AI.ipynb
