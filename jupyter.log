@@ -167,3 +167,90 @@ ValueError: not enough values to unpack (expected at least 1, got 0)
 [I 2026-03-02 11:33:06.375 ServerApp] Saving file at /notebooks/AI.ipynb
 [I 2026-03-02 11:33:26.026 ServerApp] Saving file at /notebooks/AI.ipynb
 [I 2026-03-02 11:33:41.143 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 11:52:43.766 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 11:52:46.735 ServerApp] Saving file at /notebooks/inserting.ipynb
+[I 2026-03-02 11:52:48.045 ServerApp] Saving file at /notebooks/inserting.ipynb
+[I 2026-03-02 11:52:55.812 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 11:53:05.861 ServerApp] Starting buffering for ced96f6a-9a19-42b1-925b-8f68963e76a0:a4d20bcf-0e5a-4746-9210-abe8d76260cd
+[I 2026-03-02 11:53:05.864 ServerApp] Starting buffering for 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52:ac9d4402-68e0-412f-ac96-a43d6c785cd4
+[I 2026-03-02 11:53:05.871 ServerApp] Adapting from protocol version 5.3 (kernel ced96f6a-9a19-42b1-925b-8f68963e76a0) to 5.4 (client).
+[I 2026-03-02 11:53:05.872 ServerApp] Connecting to kernel ced96f6a-9a19-42b1-925b-8f68963e76a0.
+[I 2026-03-02 11:53:05.872 ServerApp] Restoring connection for ced96f6a-9a19-42b1-925b-8f68963e76a0:a4d20bcf-0e5a-4746-9210-abe8d76260cd
+[W 2026-03-02 11:54:35.872 ServerApp] WebSocket ping timeout after 90000 ms.
+[I 2026-03-02 11:54:40.879 ServerApp] Starting buffering for ced96f6a-9a19-42b1-925b-8f68963e76a0:a4d20bcf-0e5a-4746-9210-abe8d76260cd
+[I 2026-03-02 11:54:44.888 ServerApp] Adapting from protocol version 5.3 (kernel 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52) to 5.4 (client).
+[I 2026-03-02 11:54:44.888 ServerApp] Connecting to kernel 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52.
+[I 2026-03-02 11:54:44.888 ServerApp] Restoring connection for 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52:ac9d4402-68e0-412f-ac96-a43d6c785cd4
+[I 2026-03-02 11:54:44.952 ServerApp] Adapting from protocol version 5.3 (kernel ced96f6a-9a19-42b1-925b-8f68963e76a0) to 5.4 (client).
+[I 2026-03-02 11:54:44.953 ServerApp] Connecting to kernel ced96f6a-9a19-42b1-925b-8f68963e76a0.
+[I 2026-03-02 11:54:44.953 ServerApp] Restoring connection for ced96f6a-9a19-42b1-925b-8f68963e76a0:a4d20bcf-0e5a-4746-9210-abe8d76260cd
+[I 2026-03-02 11:59:52.480 ServerApp] Starting buffering for ced96f6a-9a19-42b1-925b-8f68963e76a0:a4d20bcf-0e5a-4746-9210-abe8d76260cd
+[I 2026-03-02 11:59:52.481 ServerApp] Starting buffering for 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52:ac9d4402-68e0-412f-ac96-a43d6c785cd4
+[I 2026-03-02 12:43:01.430 ServerApp] Adapting from protocol version 5.3 (kernel 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52) to 5.4 (client).
+[I 2026-03-02 12:43:01.431 ServerApp] Connecting to kernel 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52.
+[I 2026-03-02 12:43:01.431 ServerApp] Restoring connection for 9b3bd8b3-a505-4fe2-a883-ee3e2440cd52:ac9d4402-68e0-412f-ac96-a43d6c785cd4
+[I 2026-03-02 12:43:01.473 ServerApp] Adapting from protocol version 5.3 (kernel ced96f6a-9a19-42b1-925b-8f68963e76a0) to 5.4 (client).
+[I 2026-03-02 12:43:01.473 ServerApp] Connecting to kernel ced96f6a-9a19-42b1-925b-8f68963e76a0.
+[I 2026-03-02 12:43:01.474 ServerApp] Restoring connection for ced96f6a-9a19-42b1-925b-8f68963e76a0:a4d20bcf-0e5a-4746-9210-abe8d76260cd
+[I 2026-03-02 12:43:25.540 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:45:23.137 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:45:53.225 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:45:55.860 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:46:26.530 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:47:30.123 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:47:50.112 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:48:20.189 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:50:20.295 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:50:50.500 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:52:33.354 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:53:03.499 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:54:13.992 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:54:44.091 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:55:49.517 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:56:19.618 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:57:32.113 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 12:58:02.481 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:00:03.478 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:00:14.978 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:00:45.477 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:01:37.514 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:02:08.478 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:02:21.743 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:02:35.079 ServerApp] Saving file at /notebooks/AI.ipynb
+Traceback (most recent call last):
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 3678, in _complete
+    result = matcher(context)
+             ^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2214, in file_matcher
+    code_until_cursor = self._extract_code(context.text_until_cursor)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2316, in _extract_code
+    maybe_magic, *rest = line.split(maxsplit=1)
+    ^^^^^^^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected at least 1, got 0)
+[I 2026-03-02 13:04:31.773 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:04:43.556 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:05:14.467 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:07:48.465 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:08:39.442 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:08:57.474 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:09:28.471 ServerApp] Saving file at /notebooks/AI.ipynb
+Traceback (most recent call last):
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 3678, in _complete
+    result = matcher(context)
+             ^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2214, in file_matcher
+    code_until_cursor = self._extract_code(context.text_until_cursor)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2316, in _extract_code
+    maybe_magic, *rest = line.split(maxsplit=1)
+    ^^^^^^^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected at least 1, got 0)
+[I 2026-03-02 13:10:41.041 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:11:03.517 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:11:14.858 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:11:44.945 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:12:42.475 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:13:04.410 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:13:13.577 ServerApp] Saving file at /notebooks/AI.ipynb
+[I 2026-03-02 13:13:29.756 ServerApp] Saving file at /notebooks/AI.ipynb
