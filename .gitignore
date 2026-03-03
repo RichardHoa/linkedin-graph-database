@@ -1,3 +1,6 @@
 /Data
 /jupyter_env
 jupyter_env
+env
+.env
+__pycache__
