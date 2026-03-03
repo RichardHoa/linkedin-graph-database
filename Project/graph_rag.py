@@ -292,6 +292,7 @@ class GraphRAGPipeline:
         res = ollama.generate(model=LLM_MODEL, prompt=prompt)
         return res['response']
         
+
     def run(self, user_query):
         print(f"\n--- Processing: {user_query} ---")
         context = self.cached_context
@@ -299,70 +300,42 @@ class GraphRAGPipeline:
         # 1. Plan Strategy
         plan = self.plan_execution(user_query, context)
         if plan.get('query_type') == 'out_of_scope':
-            self.log("REJECTED", f"Reason: {plan.get('reasoning')}")
-            return
+            return {
+                "user_query": user_query, 
+                "final_data": None, 
+                "error": plan.get('reasoning')
+            }
 
-        # 2. Generate Initial Embeddings
         query_params = {}
         for entity in plan.get('embeddings_needed', []):
             query_params[entity['variable_name']] = self.get_embedding(entity['search_text'])
             
         # 3. Handle Branching Logic
         raw_output = self.generate_cypher_query(user_query, context, plan)
-        
-        results_registry = {} # Stores results of each step for cross-referencing
+        results_registry = {} 
 
         if plan.get('query_type') == 'multi_step_analysis':
             try:
                 task_data = json.loads(raw_output)
                 tasks = task_data.get("tasks", [])
-                
                 for task in tasks:
                     step_id = task['step']
                     cypher_query = task['cypher']
                     
-                    self.log(f"Step {step_id}: {task['description']}", "Preparing execution...")
-                    
                     for prev_step, prev_data in results_registry.items():
-                        # Preserve original raw dict list
                         query_params[f"step{prev_step}_results"] = prev_data
-                        
-                        # Flatten the dictionaries into a scalar list for Neo4j 'IN' clauses
-                        extracted_ids = []
-                        if isinstance(prev_data, list) and len(prev_data) > 0 and isinstance(prev_data[0], dict):
-                            extracted_ids = [list(record.values())[0] for record in prev_data]
-                        
+                        extracted_ids = [list(record.values())[0] for record in prev_data] if prev_data else []
                         query_params[f"step{prev_step}_ids"] = extracted_ids
 
-                    # Filter parameters to only log those actually used in this specific query
-                    # Also mask large vector arrays to keep terminal output readable
-                    used_params = {
-                        k: ("<vector_data>" if "emb" in k else v) 
-                        for k, v in query_params.items() if f"${k}" in cypher_query
-                    }
-
-                    # Log the exact Cypher statement and the parameters injected
-                    print(f"Step {step_id} Cypher", cypher_query)
-
-                    # Execute against Neo4j
                     step_result = self.execute_query(cypher_query, query_params)
-                    
-                    # Log the returned rows
-                    print(f"Step {step_id} Result", f"Rows returned: {len(step_result)}")
-                    
                     results_registry[step_id] = step_result
-                
                 final_data = results_registry
             except json.JSONDecodeError:
-                self.log("Error", "Multi-step logic failed to return valid JSON tasks.")
-                return
+                return {"user_query": user_query, "final_data": None, "error": "Multi-step JSON parse error"}
         else:
-            # Handle standard 'stats' single-pass queries
-            used_params = {k: ("<vector_data>" if "emb" in k else v) for k, v in query_params.items()}
-            self.log("Stats Cypher Query", raw_output, used_params)
             final_data = self.execute_query(raw_output, query_params)
-            self.log("Stats Result", f"Rows returned: {len(final_data)}", final_data)
 
-        # 4. Final Synthesis
-        answer = self.generate_final_answer(user_query, final_data)
-        return answer
+        return {
+            "user_query": user_query, 
+            "final_data": final_data
+        }
