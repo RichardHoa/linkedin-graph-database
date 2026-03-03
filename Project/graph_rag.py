@@ -14,7 +14,7 @@ AUTH = ("neo4j", os.getenv("NEO4J_SECRET") )
 DB_NAME = "neo4j"
 
 EMBED_MODEL = "mxbai-embed-large"
-LLM_MODEL = "qwen3-coder"
+LLM_MODEL = "qwen2.5-coder:14b"
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
 
@@ -292,13 +292,91 @@ class GraphRAGPipeline:
         res = ollama.generate(model=LLM_MODEL, prompt=prompt)
         return res['response']
         
+    def validate_and_refine_query(self, user_query, history):
+        """
+        Validates the query against the 600,000 LinkedIn records context.
+        Determines if the question is database-related, requires clarification, or should be rejected.
+        """
+        prompt = f"""
+        Role: Senior Gatekeeper & Graph Schema Analyst for a 600,000-record LinkedIn GraphRAG system.
+        
+        ### 1. LIVE DATABASE SCHEMA (The Source of Truth):
+        {self.cached_context}
+        
+        ### 2. USER INPUT:
+        "{user_query}"
 
-    def run(self, user_query):
+        Our history conversation so far: {history}
+        
+        ### 3. VALIDATION MANDATE:
+        Your goal is to determine if this question can be translated into a Neo4j Cypher query or a Vector Search. 
+        
+        **CRITICAL REJECTION RULES (Read Carefully):**
+        - DO NOT reject a query just because a word (e.g., 'developer') isn't a "Property Name". 
+        - DO NOT reject a query if it requires counting or listing; the system is fully capable of aggregations.
+        - DO NOT reject if the information can be found via a PATH. (e.g., Professionals link to Experience, which links to JobTitles).
+        - DO NOT reject if the intent matches a VECTOR INDEX. 'experience_embeddings' can find "Developers", "Software Engineers", etc., even if the schema doesn't list them explicitly.
+        
+        ### 4. STATUS DETERMINATION:
+        - **status: "approved"** -> If a path exists in the "GRAPH STRUCTURE" or a "VECTOR INDEX" exists that relates to the user's entities (Professional, Job, Education, etc.).
+        - **status: "clarify"** -> If the question is purely general (e.g., "What is AI?") and doesn't mention or imply LinkedIn data/professionals.
+        - **status: "rejected"** -> ONLY if the request is for data types we fundamentally do not store (e.g., "What is the stock price of Apple?" or "What is this person's home address?").
+
+        ### 5. REFINEMENT TASK (For 'approved' status):
+        Create a 'refined_query' that will be passed to the internal system.
+        - Fix any spelling or grammar errors in the user's original question.
+        - Keep the query natural and direct, matching the user's intent.
+        - Add a short hint at the end to guide the system.
+
+        Example:
+        User: "how many devs in the datbaase"
+        Refined: "How many developers are in the database? Use embeddings to find this out."
+
+
+        ### OUTPUT RULES:
+        - Return ONLY JSON.
+        - No conversational filler.
+
+        EXPECTED JSON FORMAT:
+        {{
+            "status": "approved" | "clarify" | "rejected",
+            "message": "Reasoning for rejection or the clarification question.",
+            "refined_query": "The detailed internal version of the query for the system."
+        }}
+        """
+
+        self.log("Validation", "Checking query relevance and refining intent...")
+        res = ollama.generate(model="qwen2.5:7b", prompt=prompt)
+        
+        try:
+            # Clean and parse JSON
+            clean_json = re.sub(r"```json|```", "", res['response']).strip()
+            return json.loads(clean_json)
+        except json.JSONDecodeError:
+            # Fallback for safety
+            return {"status": "approved", "refined_query": user_query, "message": ""}
+
+    def run(self, user_query,history):
         print(f"\n--- Processing: {user_query} ---")
+        
+        validation = self.validate_and_refine_query(user_query,history)
+        
+        if validation['status'] != "approved":
+            return {
+                "status": validation['status'],
+                "reply": validation['message'],
+                "user_query": user_query,
+                "is_validation_hit": True
+            }
+        
+        # Use the AI-refined query for the rest of the pipeline
+        refined_query = validation['refined_query']
+        self.log("Refinement", f"Original: {user_query}\nRefined: {refined_query}")
+        
         context = self.cached_context
         
         # 1. Plan Strategy
-        plan = self.plan_execution(user_query, context)
+        plan = self.plan_execution(refined_query, context)
         if plan.get('query_type') == 'out_of_scope':
             return {
                 "user_query": user_query, 
