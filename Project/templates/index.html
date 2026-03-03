@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linkedin Graph Database</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div id="app-container">
+        <header role="banner">
+            <h1>AI Chat Assistant</h1>
+        </header>
+
+        <main id="chat-box" role="log" aria-live="polite" aria-relevant="additions">
+            </main>
+
+        <form id="input-area" onsubmit="event.preventDefault(); sendMessage();">
+            <label for="user-input" class="visually-hidden" style="display:none">Type your message</label>
+            <input type="text" id="user-input" placeholder="Enter your prompt..." aria-label="Chat input">
+            <button type="submit" aria-label="Send message">Send</button>
+        </form>
+    </div>
+ 
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
