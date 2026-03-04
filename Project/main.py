@@ -2,6 +2,7 @@ import ollama
 import json
 from flask import Flask, request, jsonify, render_template
 from graph_rag import GraphRAGPipeline
+import time
 
 app = Flask(__name__)
 pipeline = GraphRAGPipeline()
@@ -15,6 +16,7 @@ def index():
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    t0 = time.time()
     user_message = request.json.get('message')
     if not user_message:
         return jsonify({"error": "No message provided"}), 400
@@ -62,11 +64,14 @@ def chat():
     - Be concise and professional.
     """
     
-    response = ollama.generate(model="qwen3.5:9b", prompt=prompt)
+    response = ollama.generate(model="qwen2.5:7b", prompt=prompt)
     ai_reply = response['response']
 
     chat_histories[session_id].append({"role": "user", "content": user_message})
     chat_histories[session_id].append({"role": "assistant", "content": ai_reply})
+    t1 = time.time()
+
+    print(f"{t1-t0:.2f}s for the whole request")
 
     return jsonify({"reply": ai_reply, "isErr": False})
 

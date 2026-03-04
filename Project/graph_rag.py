@@ -192,31 +192,51 @@ class GraphRAGPipeline:
 
         if query_type == 'stats':
             prompt = f"""
-        Role: Neo4j Cypher Expert. Translate the user query into a high-performance Cypher query using the Schema and Vector Parameters provided.
+            Role: Neo4j Cypher Expert. Translate the user query into a high-performance Cypher query using the Schema and Vector Parameters provided.
 
-        ### 1. CONTEXT:
-        SCHEMA: {schema_context}
-        PARAMETERS: {available_vars}
+            ### 1. CONTEXT:
+            SCHEMA: {schema_context}
+            PARAMETERS: {available_vars}
 
-        ### 2. STRICT SYNTAX RULES:
-        - **Vector Search**: Use `CALL db.index.vector.queryNodes(target_embedding, 100000, $parameter_name) YIELD node, score`.
-        - **Parameters**: Use the `$` prefix for all provided vector variables (e.g., $emb_role). Never hardcode strings in the vector call.
-        - **Quality**: Apply `WHERE score > 0.8` unless the query implies a broader search.
-        - **Efficiency**: Use only the necessary nodes and relationships. For simple counts, return `count(node)`.
-        - **Regex**: Use `~ '(?i)...'` for case-insensitive string matching on non-vector properties.
+            ### 2. STRICT SYNTAX RULES:
+            - **Vector Search**: Use `CALL db.index.vector.queryNodes(target_embedding, 100000, $parameter_name) YIELD node, score`.
+            - **Parameters**: Use the `$` prefix for all provided vector variables (e.g., $emb_role). Never hardcode strings in the vector call.
+            - **Quality**: Apply `WHERE score > 0.8` immediately after the vector call to filter by similarity score.
+            - **Efficiency**: Use only the necessary nodes and relationships. For simple counts, return `count(node)`.
+            - **Regex**: Use `=~ '(?i)...'` ONLY for filtering non-vector properties (e.g., Company name, location). Never use regex to re-filter something already covered by a vector search.
 
-        ### 3. REFERENCE EXAMPLE:
-        Question: "Python experts at Google"
-        Query: 
-        CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS p, score 
-        WHERE score > 0.8
-        MATCH (p)-[:AT_COMPANY]->(c:Company) WHERE c.name =~ '(?i)google.*'
-        RETURN p.name
+            ### 3. GOLDEN RULE — NO REDUNDANT FILTERING:
+            If a concept (e.g., "developer", "software engineer", "data scientist") is already captured by a `$emb_*` vector parameter,
+            DO NOT add a WHERE clause or regex filter to re-check that same concept on any string property.
+            The embedding search IS the filter. Trust the score threshold.
 
-        ### 4. TASK:
-        User Question: "{user_query}"
-        
-        RETURN RAW CYPHER ONLY. NO MARKDOWN. NO EXPLANATION.
+            ### 4. REFERENCE EXAMPLES:
+
+            ✅ CORRECT — "How many developers are in the database?"
+            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score
+            WHERE score > 0.8
+            RETURN count(exp)
+            // No extra WHERE on job title — the embedding already finds developers.
+
+            ✅ CORRECT — "How many Python developers work at Google?"
+            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score
+            WHERE score > 0.8
+            MATCH (exp)-[:AT_COMPANY]->(c:Company)
+            WHERE c.name =~ '(?i)google.*'
+            RETURN count(exp)
+            // Regex is used ONLY on Company.name, which is NOT covered by any embedding.
+
+            ❌ WRONG — redundant re-filtering of the embedded concept:
+            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score
+            WHERE score > 0.8
+            MATCH (exp)-[:ROLE_WAS]->(jt:JobTitle)
+            WHERE jt.name =~ '(?i)developer|software engineer'  // ← NEVER do this, the embedding already handles this
+            RETURN count(exp)
+
+            ### 5. TASK:
+            User Question: "{user_query}"
+
+            RETURN RAW CYPHER ONLY. NO MARKDOWN. NO EXPLANATION.
         """
         elif query_type == 'multi_step_analysis':
             prompt = f"""
@@ -275,10 +295,21 @@ class GraphRAGPipeline:
     def execute_query(self, cypher, params):
         with self.driver.session() as session:
             try:
+                t0 = time.time()
                 result = session.run(cypher, **params)
-                return result.data()
+                data = result.data()
+                t1 = time.time()
+
+                self.log(
+                    "Neo4j Query",
+                    f"Executed in {t1 - t0:.2f}s  |  Rows returned: {len(data)}\n\nCypher:\n{cypher}"
+                )
+
+                return data
             except Exception as e:
+                self.log("Neo4j Error", f"Query failed: {str(e)}\n\nCypher:\n{cypher}")
                 return [f"Cypher Error: {str(e)}"]
+
 
     def generate_final_answer(self, user_query, db_data):
         prompt = f"""
@@ -325,13 +356,7 @@ class GraphRAGPipeline:
         ### 5. REFINEMENT TASK (For 'approved' status):
         Create a 'refined_query' that will be passed to the internal system.
         - Fix any spelling or grammar errors in the user's original question.
-        - Keep the query natural and direct, matching the user's intent.
-        - Add a short hint at the end to guide the system.
-
-        Example:
-        User: "how many devs in the datbaase"
-        Refined: "How many developers are in the database? Use embeddings to find this out."
-
+        - Strictly retains the user original question, just fix for the grammar err
 
         ### OUTPUT RULES:
         - Return ONLY JSON.
@@ -346,7 +371,7 @@ class GraphRAGPipeline:
         """
 
         self.log("Validation", "Checking query relevance and refining intent...")
-        res = ollama.generate(model="qwen2.5:7b", prompt=prompt)
+        res = ollama.generate(model=LLM_MODEL, prompt=prompt)
         
         try:
             # Clean and parse JSON
@@ -356,11 +381,18 @@ class GraphRAGPipeline:
             # Fallback for safety
             return {"status": "approved", "refined_query": user_query, "message": ""}
 
-    def run(self, user_query,history):
+    def run(self, user_query, history):
         print(f"\n--- Processing: {user_query} ---")
         
-        validation = self.validate_and_refine_query(user_query,history)
-        
+        # ── STAGE 1: Validation ──────────────────────────────────────────────────
+        t0 = time.time()
+        validation = self.validate_and_refine_query(user_query, history)
+        t1 = time.time()
+        self.log(
+            "Timing",
+            f"[1/4] validate_and_refine_query  |  model: {LLM_MODEL}  |  {t1 - t0:.2f}s"
+        )
+
         if validation['status'] != "approved":
             return {
                 "status": validation['status'],
@@ -368,29 +400,49 @@ class GraphRAGPipeline:
                 "user_query": user_query,
                 "is_validation_hit": True
             }
-        
-        # Use the AI-refined query for the rest of the pipeline
+
         refined_query = validation['refined_query']
         self.log("Refinement", f"Original: {user_query}\nRefined: {refined_query}")
-        
+
         context = self.cached_context
-        
-        # 1. Plan Strategy
+
+        # ── STAGE 2: Planning ────────────────────────────────────────────────────
+        t0 = time.time()
         plan = self.plan_execution(refined_query, context)
+        t1 = time.time()
+        self.log(
+            "Timing",
+            f"[2/4] plan_execution  |  model: {LLM_MODEL}  |  {t1 - t0:.2f}s  |  type: {plan.get('query_type')}"
+        )
+
         if plan.get('query_type') == 'out_of_scope':
             return {
-                "user_query": user_query, 
-                "final_data": None, 
+                "user_query": user_query,
+                "final_data": None,
                 "error": plan.get('reasoning')
             }
 
+        # ── STAGE 3: Embeddings ──────────────────────────────────────────────────
         query_params = {}
         for entity in plan.get('embeddings_needed', []):
+            t0 = time.time()
             query_params[entity['variable_name']] = self.get_embedding(entity['search_text'])
-            
-        # 3. Handle Branching Logic
+            t1 = time.time()
+            self.log(
+                "Timing",
+                f"[3/4] get_embedding  |  model: {EMBED_MODEL}  |  {t1 - t0:.2f}s  |  term: '{entity['search_text']}'"
+            )
+
+        # ── STAGE 4: Cypher Generation ───────────────────────────────────────────
+        t0 = time.time()
         raw_output = self.generate_cypher_query(user_query, context, plan)
-        results_registry = {} 
+        t1 = time.time()
+        self.log(
+            "Timing",
+            f"[4/4] generate_cypher_query  |  model: {LLM_MODEL}  |  {t1 - t0:.2f}s"
+        )
+
+        results_registry = {}
 
         if plan.get('query_type') == 'multi_step_analysis':
             try:
@@ -399,7 +451,7 @@ class GraphRAGPipeline:
                 for task in tasks:
                     step_id = task['step']
                     cypher_query = task['cypher']
-                    
+
                     for prev_step, prev_data in results_registry.items():
                         query_params[f"step{prev_step}_results"] = prev_data
                         extracted_ids = [list(record.values())[0] for record in prev_data] if prev_data else []
@@ -414,6 +466,7 @@ class GraphRAGPipeline:
             final_data = self.execute_query(raw_output, query_params)
 
         return {
-            "user_query": user_query, 
+            "user_query": user_query,
             "final_data": final_data
         }
+
