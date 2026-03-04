@@ -28,27 +28,50 @@ def chat():
 
     history_str = "\n".join([f"{m['role']}: {m['content']}" for m in chat_histories[session_id]])
 
-    rag_response = pipeline.run(user_message,history_str)
+    # --- START: Orchestration / Routing Logic ---
+    router_prompt = f"""
+    You are the Lead Orchestrator for a LinkedIn GraphRAG system. 
+    Analyze the question and history to decide if we need to query the Neo4j database or if we can answer directly.
+
+    SCHEMA CONTEXT:
+    {pipeline.cached_context}
+
+    HISTORY:
+    {history_str}
+
+    USER QUESTION: {user_message}
+
+    DECISION RULES:
+    1. "DIRECT_ANSWER": Use if the question is general chitchat, a greeting, or can be fully answered using the provided HISTORY.
+    2. "QUERY_GRAPH": Use if the question requires specific LinkedIn data, statistics, or professional details NOT fully present in the HISTORY.
+    3. "CLARIFY": Use if the question is too vague or irrelevant to the system's purpose.
+
+    OUTPUT FORMAT: Return ONLY a JSON object.
+    {{
+        "action": "DIRECT_ANSWER" | "QUERY_GRAPH" | "CLARIFY",
+        "reply": "Draft the response here for DIRECT_ANSWER or CLARIFY",
+        "refined_query": "A refined version of the user question based on the schema context, retains their original question, just add in more detail"
+    }}
+    """
     
-    if rag_response.get("is_validation_hit"):
-        ai_reply = rag_response['reply']
-        
+    router_res = ollama.generate(model="qwen2.5:7b", prompt=router_prompt, format="json")
+    router_data = json.loads(router_res['response'])
+
+    if router_data['action'] != "QUERY_GRAPH":
+        ai_reply = router_data['reply']
         chat_histories[session_id].append({"role": "user", "content": user_message})
         chat_histories[session_id].append({"role": "assistant", "content": ai_reply})
-        
-        return jsonify({
-            "reply": ai_reply,
-            "isErr": False,
-            "status": rag_response['status']
-        })
+        return jsonify({"reply": ai_reply, "isErr": False})
 
+    # Proceed to GraphRAG with the refined query
+    rag_response = pipeline.run(router_data['refined_query'])
+    
+    # Check for pipeline errors
     if "error" in rag_response:
         return jsonify({
             "reply": f"System Error: {rag_response['error']}", 
             "isErr": True
         }), 500
-
-
 
     prompt = f"""
     You are a professional assistant analyzing LinkedIn graph data.
