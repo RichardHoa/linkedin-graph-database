@@ -28,10 +28,9 @@ def chat():
 
     history_str = "\n".join([f"{m['role']}: {m['content']}" for m in chat_histories[session_id]])
 
-    # --- START: Orchestration / Routing Logic ---
     router_prompt = f"""
     You are the Lead Orchestrator for a LinkedIn GraphRAG system. 
-    Analyze the question and history to decide if we need to query the Neo4j database or if we can answer directly.
+    Analyze the user's latest question against the conversation history to determine the necessary action and formulate a precise, standalone query for the database.
 
     SCHEMA CONTEXT:
     {pipeline.cached_context}
@@ -39,20 +38,27 @@ def chat():
     HISTORY:
     {history_str}
 
-    USER QUESTION: {user_message}
+    USER LATEST QUESTION: "{user_message}"
 
     DECISION RULES:
-    1. "DIRECT_ANSWER": Use if the question is general chitchat, a greeting, or can be fully answered using the provided HISTORY.
-    2. "QUERY_GRAPH": Use if the question requires specific LinkedIn data, statistics, or professional details NOT fully present in the HISTORY.
-    3. "CLARIFY": Use if the question is too vague or irrelevant to the system's purpose.
+    1. "DIRECT_ANSWER": Use if the question is general chitchat, a greeting, or can be fully and accurately answered relying solely on the provided HISTORY.
+    2. "QUERY_GRAPH": Use if the question requires querying the Neo4j database for LinkedIn data, statistics, or professional details not currently in the HISTORY.
+    3. "CLARIFY": Use if the question is entirely ambiguous or completely outside the domain of professional/LinkedIn graph data.
 
-    OUTPUT FORMAT: Return ONLY a JSON object.
+    QUERY REFINEMENT RULES (CRITICAL):
+    If the action is "QUERY_GRAPH", you MUST generate a `refined_query` that is a fully self-contained, descriptive sentence. The downstream database agent does not have access to the conversation history.
+    - Resolve Coreferences: Replace terms like "they", "these", "those", "he", "she", or "it" with the actual entities mentioned in the HISTORY. (e.g., "how many of these devs are junior?" -> "How many junior software developers are there?").
+    - Inherit Context: If the user asks a follow-up question (e.g., History: "Who works at Apple?", User: "What about Google?"), combine them into a complete thought (e.g., "Who works at Google?").
+    - Be Specific: Include the target professions, companies, or metrics explicitly in the refined string.
+
+    OUTPUT FORMAT: Return ONLY a valid JSON object. Do not include markdown formatting like ```json.
     {{
         "action": "DIRECT_ANSWER" | "QUERY_GRAPH" | "CLARIFY",
-        "reply": "Draft the response here for DIRECT_ANSWER or CLARIFY",
-        "refined_query": "A refined version of the user question based on the schema context, retains their original question, just add in more detail"
+        "reply": "Draft the response here for DIRECT_ANSWER or CLARIFY. Leave empty for QUERY_GRAPH.",
+        "refined_query": "The fully resolved, self-contained human query (no neo4j code) requiring no prior context."
     }}
     """
+
     
     router_res = ollama.generate(model="qwen2.5:7b", prompt=router_prompt, format="json")
     router_data = json.loads(router_res['response'])

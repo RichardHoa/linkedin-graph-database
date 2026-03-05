@@ -19,21 +19,23 @@ LLM_MODEL = "qwen2.5-coder:14b"
 driver = GraphDatabase.driver(URI, auth=AUTH)
 
 class GraphRAGPipeline:
-    def __init__(self):
+    def __init__(self, log_indent=2):
         self.driver = driver
-        print("Initializing System Context...")
+        self.log_indent = log_indent
+        self.log("init", "Initializing System Context...")
         self.cached_context = self.get_system_context()
 
+
     def log(self, stage, message, data=None):
-        print(f"\n{'='*20} [DEBUG: {stage.upper()}] {'='*20}")
-        print(message)
-        if data:
-            print(f"\n--- DATA ({stage}) ---")
-            if isinstance(data, (dict, list)):
-                print(json.dumps(data, indent=2, default=str))
-            else:
-                print(data)
-        print("="*60)
+        log_entry = {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "stage": stage.upper(),
+            "message": message,
+            "data": data
+        }
+        # Using self.log_indent: an integer beautifies, None prints raw/compact JSON.
+        print(json.dumps(log_entry, indent=self.log_indent, default=str))
+
 
     def get_system_context(self):
         """
@@ -127,9 +129,9 @@ class GraphRAGPipeline:
         return res['embedding']
 
     def plan_execution(self, user_query, schema_context):
-        """Step 1: Ask the AI to identify what needs embedding and the overall strategy."""
         prompt = f"""
-        Role: You are the 'Strategic Planner' in a GraphRAG pipeline. Your task is to analyze the user question against the provided Neo4j schema to determine the execution strategy.
+        Role: You are the 'Strategic Planner' in a GraphRAG pipeline. 
+        Objective: Analyze the user question against the provided Neo4j schema to determine the execution strategy and identify required vector embeddings.
 
         ### 1. LIVE DATABASE CONTEXT:
         {schema_context}
@@ -137,69 +139,25 @@ class GraphRAGPipeline:
         ### 2. USER QUESTION: 
         "{user_query}"
 
-        this is the embeddings, it can answer a lot of question, decide carefully if something is truly out of scope, be very critical about this
-        # 1. Experience:
-experience_query = 
-MATCH (e:Experience)-[:ROLE_WAS]->(j:JobTitle)
-MATCH (e)-[:AT_COMPANY]->(c:Company)
-WHERE e.embedding IS NULL
-RETURN e.id as id, 
-    'Job: ' + coalesce(j.name, 'unknown job title') + 
-    ' at ' + coalesce(c.name, 'unknown company') + 
-    '. Description: ' + coalesce(e.description, 'unknown description') + 
-    '. Period: ' + coalesce(e.start_date, 'unknown start date') + ' to ' + coalesce(e.end_date, 'unknown end date') + 
-    '. Duration: ' + coalesce(toString(e.duration_days), '0') + ' days.' as text
-
-# 2. Education:
-education_query = 
-MATCH (ed:Education)
-WHERE ed.embedding IS NULL
-OPTIONAL MATCH (ed)-[:FOR_DEGREE]->(d:Degree)
-OPTIONAL MATCH (ed)-[:IN_MAJOR]->(m:Major)
-OPTIONAL MATCH (ed)-[:AT_UNIVERSITY]->(u:University)
-RETURN ed.id as id, 
-    'University: ' + coalesce(u.name, 'unknown university') + 
-    '. Degree: ' + coalesce(ed.degree_raw, d.name, 'unknown degree') + 
-    '. Major: ' + coalesce(ed.major_raw, m.name, 'unknown major') + '.' as text
-
-# 3. Certification:
-certification_query =
-MATCH (c:Certification)
-WHERE c.embedding IS NULL
-RETURN c.id as id, 
-    'Certification: ' + coalesce(c.title, 'unknown certification title') + 
-    '. Issued by: ' + coalesce(c.subtitle, 'unknown issuer') + 
-    '. Date: ' + coalesce(c.issued_date, 'unknown issued date') + '.' as text
-
-# 4. Professional:
-professional_query = 
-MATCH (p:Professional)
-WHERE p.embedding IS NULL
-OPTIONAL MATCH (p)-[:CURRENT_INDUSTRY]->(ci:Industry)
-OPTIONAL MATCH (p)-[:FIRST_INDUSTRY]->(fi:Industry)
-WITH p, ci, fi,
-     COUNT { (p)-[:HAS_EXPERIENCE]->() } as expCount,
-     COUNT { (p)-[:HAS_EDUCATION]->() } as eduCount
-RETURN p.linkedin_id as id, 
-    'Name: ' + coalesce(p.name, 'unknown name') + 
-    '. Summary: ' + coalesce(p.about, 'unknown summary') + 
-    '. Current Industry: ' + coalesce(ci.name, 'unknown current industry') + 
-    '. First Industry: ' + coalesce(fi.name, 'unknown first industry') + 
-    '. Experience Count: ' + toString(expCount) + 
-    '. Education Count: ' + toString(eduCount) + '.' as text
+        ### 3. AVAILABLE EMBEDDINGS & SCOPE:
+        The database contains the following embedded entities. Use this to determine if the query is in scope:
+        - Experience: Captures job roles, companies, descriptions, and duration.
+        - Education: Captures universities, degrees, and majors.
+        - Certification: Captures certification titles, issuers, and dates.
+        - Professional: Captures profile summaries, industries, and overall experience/education counts.
         
-        ### 3. CLASSIFICATION TASK:
+        ### 4. CLASSIFICATION TASK:
         Assign exactly one 'query_type' based on these definitions:
         - "stats": Requests for counts, lists, or simple aggregations existing within the schema.
         - "multi_step_analysis": Complex requests requiring path traversals, comparisons, or multi-node correlations.
-        - "out_of_scope": Use this if the question cannot be answered using the provided Schema or Vector Indexes. You must carefully validate if the entities or relationships requested exist in the Context. If the data is missing, select this type.
+        - "out_of_scope": The question cannot be answered using the provided Schema or Available Embeddings. Be highly critical; if the data is missing, select this type.
 
-        ### 4. ENTITY EXTRACTION:
+        ### 5. ENTITY EXTRACTION:
         Identify all conceptual entities requiring semantic (vector) search. Map them to the correct 'embedding_name' found in the Vector Indexes section of the context.
 
-        ### 5. OUTPUT REQUIREMENTS:
+        ### 6. OUTPUT REQUIREMENTS:
         - Provide a clear 'reasoning' for your classification. If 'out_of_scope', explicitly state what data is missing from the schema.
-        - Return ONLY valid JSON.
+        - Return ONLY valid JSON matching the exact format below.
 
         EXPECTED JSON FORMAT:
         {{
@@ -209,14 +167,8 @@ RETURN p.linkedin_id as id,
                 {{
                     "variable_name": "Unique variable name (e.g., emb_role)", 
                     "search_text": "Conceptual search term (e.g., 'Software Developer')", 
-                    "embedding_name": "// Read the schema and carefully select the matching embedding index name"
-                }},
-                {{
-                    "variable_name": "Next unique variable (e.g., emb_cert)", 
-                    "search_text": "Next search term (e.g., 'Cloud Architecture')", 
-                    "embedding_name": "// Select the matching embedding index name for this specific entity"
+                    "embedding_name": "<Target Index Name from Schema>"
                 }}
-                // Add as many additional embedding objects as needed to satisfy the query.
             ]
         }}
         """
@@ -243,52 +195,23 @@ RETURN p.linkedin_id as id,
 
         if query_type == 'stats':
             prompt = f"""
-            Role: Neo4j Cypher Expert. Translate the user query into a high-performance Cypher query using the Schema and Vector Parameters provided.
+            Role: Neo4j Cypher Expert. Translate the user query into an optimized, high-performance Cypher query using the Schema and Vector Parameters provided.
 
             ### 1. CONTEXT:
             SCHEMA: {schema_context}
             PARAMETERS: {available_vars}
 
-            ### 2. STRICT SYNTAX RULES:
-            - **Vector Search**: Use `CALL db.index.vector.queryNodes(target_embedding, 100000, $parameter_name) YIELD node, score`.
-            - **Parameters**: Use the `$` prefix for all provided vector variables (e.g., $emb_role). Never hardcode strings in the vector call.
-            - **Quality**: Apply `WHERE score > 0.8` immediately after the vector call to filter by similarity score.
-            - **Efficiency**: Use only the necessary nodes and relationships. For simple counts, return `count(node)`.
-            - **Regex**: Use `=~ '(?i)...'` ONLY for filtering non-vector properties (e.g., Company name, location). Never use regex to re-filter something already covered by a vector search.
-
-            ### 3. GOLDEN RULE — NO REDUNDANT FILTERING:
-            If a concept (e.g., "developer", "software engineer", "data scientist") is already captured by a `$emb_*` vector parameter,
-            DO NOT add a WHERE clause or regex filter to re-check that same concept on any string property.
-            The embedding search IS the filter. Trust the score threshold.
-
-            ### 4. REFERENCE EXAMPLES:
-
-            ✅ CORRECT — "How many developers are in the database?"
-            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score
-            WHERE score > 0.8
-            RETURN count(exp)
-            // No extra WHERE on job title — the embedding already finds developers.
-
-            ✅ CORRECT — "How many Python developers work at Google?"
-            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score
-            WHERE score > 0.8
-            MATCH (exp)-[:AT_COMPANY]->(c:Company)
-            WHERE c.name =~ '(?i)google.*'
-            RETURN count(exp)
-            // Regex is used ONLY on Company.name, which is NOT covered by any embedding.
-
-            ❌ WRONG — redundant re-filtering of the embedded concept:
-            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score
-            WHERE score > 0.8
-            MATCH (exp)-[:ROLE_WAS]->(jt:JobTitle)
-            WHERE jt.name =~ '(?i)developer|software engineer'  // ← NEVER do this, the embedding already handles this
-            RETURN count(exp)
-
-            ### 5. TASK:
+            ### 2. PERFORMANCE & SYNTAX RULES:
+            - **Vector Search**: If using embeddings, use `CALL db.index.vector.queryNodes(target_embedding, 100000, $parameter_name) YIELD node, score WHERE score > 0.8`.
+            - **Parameters**: Use the `$` prefix for all provided vector variables.
+            - **Optimization**: Write the most efficient query possible. Avoid clauses that cause long execution times such as Cartesian products, unbounded variable-length paths, or excessive `OPTIONAL MATCH` and heavy `REGEX` operations.
+            - **Direct Filtering**: Trust the embedding scores for semantic matching; do not add redundant string filtering on concepts already captured by the embedding.
+            
+            ### 3. TASK:
             User Question: "{user_query}"
 
             RETURN RAW CYPHER ONLY. NO MARKDOWN. NO EXPLANATION.
-        """
+            """
         elif query_type == 'multi_step_analysis':
             prompt = f"""
             Role: Neo4j Graph Data Scientist & Strategic Researcher.
@@ -344,6 +267,7 @@ RETURN p.linkedin_id as id,
         return re.sub(r"```json|```cypher|```", "", res['response']).strip()
 
     def execute_query(self, cypher, params):
+        print(cypher)
         with self.driver.session() as session:
             try:
                 t0 = time.time()
