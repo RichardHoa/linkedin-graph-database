@@ -195,23 +195,47 @@ class GraphRAGPipeline:
 
         if query_type == 'stats':
             prompt = f"""
-            Role: Neo4j Cypher Expert. Translate the user query into an optimized, high-performance Cypher query using the Schema and Vector Parameters provided.
+            Role: Neo4j Cypher Expert.
+            Task: Generate a high-performance, "Vector-First" Cypher query using the provided Schema and Parameters.
 
-            ### 1. CONTEXT:
-            SCHEMA: {schema_context}
-            PARAMETERS: {available_vars}
+            ### 1. CONTEXT
+            - SCHEMA: {schema_context}
+            - PARAMETERS: {available_vars}
 
-            ### 2. PERFORMANCE & SYNTAX RULES:
-            - **Vector Search**: If using embeddings, use `CALL db.index.vector.queryNodes(target_embedding, 100000, $parameter_name) YIELD node, score WHERE score > 0.8`.
-            - **Parameters**: Use the `$` prefix for all provided vector variables.
-            - **Optimization**: Write the most efficient query possible. Avoid clauses that cause long execution times such as Cartesian products, unbounded variable-length paths, or excessive `OPTIONAL MATCH` and heavy `REGEX` operations.
-            - **Direct Filtering**: Trust the embedding scores for semantic matching; do not add redundant string filtering on concepts already captured by the embedding.
+            ### 2. CORE PERFORMANCE RULES (MANDATORY)
+            - **Vector-First Entry**: NEVER start with a generic `MATCH`. The query must always start with a `CALL db.index.vector.queryNodes(...)` as the primary filter.
+            - **No Redundant Filtering**: If a concept is provided as a vector parameter (e.g., $emb_role), DO NOT use `WHERE` or property maps (e.g., `{{name: '...'}}`) to re-filter that same concept. Trust the embedding.
+            - **No Inefficient Loops**: Never place a `CALL` immediately after a `WITH` without first using `collect()`. Avoid O(N*M) nested lookups.
+
+            ### 3. LOGICAL PATTERNS
+            - **INTERSECTION (AND)**: Use when narrowing one entity (e.g., "Python Developer").
+                *Syntax*: CALL (Term A) -> Collect -> CALL (Term B) -> Filter `WHERE node_B IN list_A`.
+            - **UNION (OR)**: Use when combining categories (e.g., "Junior or Fresher").
+                *Syntax*: CALL (Term A) -> Collect -> CALL (Term B) -> Collect -> `apoc.coll.union(list_A, list_B)` -> UNWIND -> Count.
+
+            ### 4. REFERENCE EXAMPLES
             
-            ### 3. TASK:
+            ✅ CORRECT (Counting Professionals via Experience):
+            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score
+            WHERE score > 0.8
+            MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp)
+            RETURN count(DISTINCT p)
+
+            ✅ CORRECT (OR Logic for Junior or Fresher):
+            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_junior) YIELD node AS n1, score WHERE score > 0.8
+            WITH collect(n1) AS list1
+            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_fresher) YIELD node AS n2, score WHERE score > 0.8
+            WITH list1, collect(n2) AS list2
+            WITH apoc.coll.union(list1, list2) AS combined
+            UNWIND combined AS result
+            RETURN count(DISTINCT result)
+
+            ### 5. EXECUTION
             User Question: "{user_query}"
 
             RETURN RAW CYPHER ONLY. NO MARKDOWN. NO EXPLANATION.
             """
+
         elif query_type == 'multi_step_analysis':
             prompt = f"""
             Role: Neo4j Graph Data Scientist & Strategic Researcher.

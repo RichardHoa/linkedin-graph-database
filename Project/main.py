@@ -29,37 +29,41 @@ def chat():
     history_str = "\n".join([f"{m['role']}: {m['content']}" for m in chat_histories[session_id]])
 
     router_prompt = f"""
-    You are the Lead Orchestrator for a LinkedIn GraphRAG system. 
-    Analyze the user's latest question against the conversation history to determine the necessary action and formulate a precise, standalone query for the database.
+    Role: Lead Orchestrator for a LinkedIn GraphRAG system.
+    Task: Determine the required action and resolve conversation context into a standalone query.
 
-    SCHEMA CONTEXT:
-    {pipeline.cached_context}
+    ### CONTEXT
+    - SCHEMA: {pipeline.cached_context}
+    - HISTORY: {history_str}
+    - CURRENT QUESTION: "{user_message}"
 
-    HISTORY:
-    {history_str}
+    ### DECISION RULES
+    1. DIRECT_ANSWER: Greetings, general chitchat, or if the HISTORY already contains the complete answer.
+    2. QUERY_GRAPH: Questions requiring LinkedIn-specific stats, professional details, or relationships not in HISTORY.
+    3. CLARIFY: Questions that are ambiguous or outside the scope of professional LinkedIn data.
 
-    USER LATEST QUESTION: "{user_message}"
+    ### QUERY REFINEMENT INSTRUCTIONS (CRITICAL)
+    If action is "QUERY_GRAPH", generate a `refined_query` that is a fully self-contained, descriptive sentence.
+    - Contextual Resolution: Resolve all pronouns (e.g., "them", "those", "these") using entities from HISTORY.
+    - Example Logic: 
+        - History: User asks "how many developers?", AI answers "30,000".
+        - Current: User asks "how many of them are junior or fresher?"
+        - Refined Query: "Get the total count of developers in junior or fresher positions."
 
-    DECISION RULES:
-    1. "DIRECT_ANSWER": Use if the question is general chitchat, a greeting, or can be fully and accurately answered relying solely on the provided HISTORY.
-    2. "QUERY_GRAPH": Use if the question requires querying the Neo4j database for LinkedIn data, statistics, or professional details not currently in the HISTORY.
-    3. "CLARIFY": Use if the question is entirely ambiguous or completely outside the domain of professional/LinkedIn graph data.
+    ### MANDATORY OUTPUT RULES
+    - If action is DIRECT_ANSWER or CLARIFY: The "reply" field MUST contain a professional, helpful response. It CANNOT be empty.
+    - If action is QUERY_GRAPH: The "reply" field MUST be an empty string (""), and "refined_query" MUST be a standalone sentence resolving all context.
 
-    QUERY REFINEMENT RULES (CRITICAL):
-    If the action is "QUERY_GRAPH", you MUST generate a `refined_query` that is a fully self-contained, descriptive sentence. The downstream database agent does not have access to the conversation history.
-    - Resolve Coreferences: Replace terms like "they", "these", "those", "he", "she", or "it" with the actual entities mentioned in the HISTORY. (e.g., "how many of these devs are junior?" -> "How many junior software developers are there?").
-    - Inherit Context: If the user asks a follow-up question (e.g., History: "Who works at Apple?", User: "What about Google?"), combine them into a complete thought (e.g., "Who works at Google?").
-    - Be Specific: Include the target professions, companies, or metrics explicitly in the refined string.
-
-    OUTPUT FORMAT: Return ONLY a valid JSON object. Do not include markdown formatting like ```json.
+    ### OUTPUT SPECIFICATION
+    Return ONLY a JSON object. No markdown formatting.
     {{
         "action": "DIRECT_ANSWER" | "QUERY_GRAPH" | "CLARIFY",
-        "reply": "Draft the response here for DIRECT_ANSWER or CLARIFY. Leave empty for QUERY_GRAPH.",
-        "refined_query": "The fully resolved, self-contained human query (no neo4j code) requiring no prior context."
+        "reply": "Drafted response for non-graph actions. MUST NOT BE EMPTY for DIRECT_ANSWER or CLARIFY.",
+        "refined_query": "Standalone human-language query resolving all historical context."
     }}
     """
 
-    
+
     router_res = ollama.generate(model="qwen2.5:7b", prompt=router_prompt, format="json")
     router_data = json.loads(router_res['response'])
 
