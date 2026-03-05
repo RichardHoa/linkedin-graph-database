@@ -136,6 +136,57 @@ class GraphRAGPipeline:
         
         ### 2. USER QUESTION: 
         "{user_query}"
+
+        this is the embeddings, it can answer a lot of question, decide carefully if something is truly out of scope, be very critical about this
+        # 1. Experience:
+experience_query = 
+MATCH (e:Experience)-[:ROLE_WAS]->(j:JobTitle)
+MATCH (e)-[:AT_COMPANY]->(c:Company)
+WHERE e.embedding IS NULL
+RETURN e.id as id, 
+    'Job: ' + coalesce(j.name, 'unknown job title') + 
+    ' at ' + coalesce(c.name, 'unknown company') + 
+    '. Description: ' + coalesce(e.description, 'unknown description') + 
+    '. Period: ' + coalesce(e.start_date, 'unknown start date') + ' to ' + coalesce(e.end_date, 'unknown end date') + 
+    '. Duration: ' + coalesce(toString(e.duration_days), '0') + ' days.' as text
+
+# 2. Education:
+education_query = 
+MATCH (ed:Education)
+WHERE ed.embedding IS NULL
+OPTIONAL MATCH (ed)-[:FOR_DEGREE]->(d:Degree)
+OPTIONAL MATCH (ed)-[:IN_MAJOR]->(m:Major)
+OPTIONAL MATCH (ed)-[:AT_UNIVERSITY]->(u:University)
+RETURN ed.id as id, 
+    'University: ' + coalesce(u.name, 'unknown university') + 
+    '. Degree: ' + coalesce(ed.degree_raw, d.name, 'unknown degree') + 
+    '. Major: ' + coalesce(ed.major_raw, m.name, 'unknown major') + '.' as text
+
+# 3. Certification:
+certification_query =
+MATCH (c:Certification)
+WHERE c.embedding IS NULL
+RETURN c.id as id, 
+    'Certification: ' + coalesce(c.title, 'unknown certification title') + 
+    '. Issued by: ' + coalesce(c.subtitle, 'unknown issuer') + 
+    '. Date: ' + coalesce(c.issued_date, 'unknown issued date') + '.' as text
+
+# 4. Professional:
+professional_query = 
+MATCH (p:Professional)
+WHERE p.embedding IS NULL
+OPTIONAL MATCH (p)-[:CURRENT_INDUSTRY]->(ci:Industry)
+OPTIONAL MATCH (p)-[:FIRST_INDUSTRY]->(fi:Industry)
+WITH p, ci, fi,
+     COUNT { (p)-[:HAS_EXPERIENCE]->() } as expCount,
+     COUNT { (p)-[:HAS_EDUCATION]->() } as eduCount
+RETURN p.linkedin_id as id, 
+    'Name: ' + coalesce(p.name, 'unknown name') + 
+    '. Summary: ' + coalesce(p.about, 'unknown summary') + 
+    '. Current Industry: ' + coalesce(ci.name, 'unknown current industry') + 
+    '. First Industry: ' + coalesce(fi.name, 'unknown first industry') + 
+    '. Experience Count: ' + toString(expCount) + 
+    '. Education Count: ' + toString(eduCount) + '.' as text
         
         ### 3. CLASSIFICATION TASK:
         Assign exactly one 'query_type' based on these definitions:
