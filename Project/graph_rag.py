@@ -30,15 +30,29 @@ class GraphRAGPipeline:
         
         self.tokenizer = AutoTokenizer.from_pretrained(HF_MODEL_ID)
         
-        # Determine the available device. Fallback to CPU if CUDA is not available.
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        
-        self.model = AutoModelForCausalLM.from_pretrained(
-            HF_MODEL_ID,
-            torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-            low_cpu_mem_usage=True
-        ).to(self.device)
-
+        if self.device == "cuda":
+            from transformers import BitsAndBytesConfig
+            # Use 4-bit quantization (NF4) to save VRAM while preserving accuracy
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_use_double_quant=True,
+            )
+            
+            self.model = AutoModelForCausalLM.from_pretrained(
+                HF_MODEL_ID,
+                quantization_config=bnb_config,
+                device_map="auto",
+                low_cpu_mem_usage=True
+            )
+        else:
+            # Fallback for CPU
+            self.model = AutoModelForCausalLM.from_pretrained(
+                HF_MODEL_ID,
+                torch_dtype=torch.float32,
+                low_cpu_mem_usage=True
+            ).to(self.device)
 
     def log(self, stage, message, data=None):
         log_entry = {
