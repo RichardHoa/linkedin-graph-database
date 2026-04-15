@@ -67,7 +67,7 @@ class GraphRAGPipeline:
 
     def get_system_context(self):
         """Retrieves the LIVE database state."""
-        with self.driver.session() as session:
+        with self.driver.session(database=DB_NAME) as session:
             # 1. Grouped Graph Structure
             schema_query = """
             CALL apoc.meta.graph() YIELD nodes, relationships
@@ -163,11 +163,21 @@ class GraphRAGPipeline:
             {"role": "user", "content": prompt}
         ]
         res = self.generate_completion(messages)
-        return re.sub(r"```cypher|```", "", res).strip()
+        
+        # Robust extraction for Cypher queries inside markdown blocks
+        cypher = res
+        if "```" in res:
+            match = re.search(r"```(?:cypher)?\s*(.*?)\s*```", res, re.DOTALL)
+            if match:
+                cypher = match.group(1)
+            else:
+                cypher = re.sub(r"```cypher|```", "", res)
+        
+        return cypher.strip()
 
     def execute_query(self, cypher, params=None):
         params = params or {}
-        with self.driver.session() as session:
+        with self.driver.session(database=DB_NAME) as session:
             try:
                 t0 = time.time()
                 result = session.run(cypher, **params)

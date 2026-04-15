@@ -58,15 +58,32 @@ def chat():
 
     # Use HF model instead of Ollama for routing
     router_res = pipeline.generate_completion(messages)
-    try:
-        router_data = json.loads(re.sub(r"```json|```", "", router_res).strip())
-    except:
-        # Fallback if model fails to output clean JSON
+    
+    def extract_json(text):
+        try:
+            # Look for JSON structure { ... }
+            start = text.find('{')
+            end = text.rfind('}')
+            if start != -1 and end != -1:
+                return json.loads(text[start:end+1])
+        except Exception as e:
+            print(f"JSON Parsing Error: {e}")
+        return None
+
+    router_data = extract_json(router_res)
+    
+    if not router_data:
+        print(f"Failed to parse router response: {router_res}")
         router_data = {
             "action": "QUERY_GRAPH",
             "reply": "",
             "refined_query": user_message,
         }
+    
+    # Defensive key handling to prevent KeyError even if JSON is valid but incomplete
+    router_data.setdefault("action", "QUERY_GRAPH")
+    router_data.setdefault("reply", "")
+    router_data.setdefault("refined_query", user_message)
 
     if router_data["action"] != "QUERY_GRAPH":
         ai_reply = router_data["reply"]
@@ -77,9 +94,11 @@ def chat():
     # Proceed to GraphRAG with the refined query
     rag_response = pipeline.run(router_data["refined_query"])
 
-    if "error" in rag_response:
+    # Correct error checking (look into final_data list returned by execute_query)
+    final_data = rag_response.get("final_data", [])
+    if isinstance(final_data, list) and len(final_data) > 0 and isinstance(final_data[0], dict) and "error" in final_data[0]:
         return (
-            jsonify({"reply": f"System Error: {rag_response['error']}", "isErr": True}),
+            jsonify({"reply": f"Database Error: {final_data[0]['error']}", "isErr": True}),
             500,
         )
 
