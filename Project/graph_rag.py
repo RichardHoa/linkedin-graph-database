@@ -1,11 +1,12 @@
-# Example complete graph pipeline
-import ollama
 import time
 import json
 import re
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
 import os
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import ollama
 
 load_dotenv()
 
@@ -13,8 +14,8 @@ URI = "bolt://localhost:7687"
 AUTH = ("neo4j", os.getenv("NEO4J_SECRET") )
 DB_NAME = "neo4j"
 
-EMBED_MODEL = "mxbai-embed-large"
 LLM_MODEL = "qwen2.5-coder:14b"
+HF_MODEL_ID = "neo4j/text-to-cypher-Gemma-3-4B-Instruct-2025.04.0"
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
 
@@ -24,6 +25,19 @@ class GraphRAGPipeline:
         self.log_indent = log_indent
         self.log("init", "Initializing System Context...")
         self.cached_context = self.get_system_context()
+        
+        self.log("init", f"Loading Hugging Face model {HF_MODEL_ID} on CUDA...")
+        
+        self.tokenizer = AutoTokenizer.from_pretrained(HF_MODEL_ID)
+        
+        # Determine the available device. Fallback to CPU if CUDA is not available.
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+        self.model = AutoModelForCausalLM.from_pretrained(
+            HF_MODEL_ID,
+            torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
+            low_cpu_mem_usage=True
+        ).to(self.device)
 
 
     def log(self, stage, message, data=None):
@@ -33,7 +47,6 @@ class GraphRAGPipeline:
             "message": message,
             "data": data
         }
-        # Using self.log_indent: an integer beautifies, None prints raw/compact JSON.
         print(json.dumps(log_entry, indent=self.log_indent, default=str))
 
 
@@ -123,174 +136,42 @@ class GraphRAGPipeline:
         context.extend(formatted_indexes)
     
         return "\n".join(context)
+
+    def generate_cypher_query(self, user_query, schema_context):
+        """Generate Cypher using the given huggingface model directly."""
+        prompt = f"""Given the following Neo4j Graph Schema:
+{schema_context}
+
+Generate a valid Cypher query to answer the following user question:
+{user_query}
+"""
+        messages = [
+            {"role": "system", "content": "You are a Neo4j Cypher expert. Convert the user's natural language question into a Cypher query using the provided schema."},
+            {"role": "user", "content": prompt}
+        ]
         
-    def get_embedding(self, text):
-        res = ollama.embeddings(model=EMBED_MODEL, prompt=text)
-        return res['embedding']
-
-    def plan_execution(self, user_query, schema_context):
-        prompt = f"""
-        Role: You are the 'Strategic Planner' in a GraphRAG pipeline. 
-        Objective: Analyze the user question against the provided Neo4j schema to determine the execution strategy and identify required vector embeddings.
-
-        ### 1. LIVE DATABASE CONTEXT:
-        {schema_context}
+        self.log("Cypher Generation", f"Generating query using {HF_MODEL_ID}...")
         
-        ### 2. USER QUESTION: 
-        "{user_query}"
-
-        ### 3. AVAILABLE EMBEDDINGS & SCOPE:
-        The database contains the following embedded entities. Use this to determine if the query is in scope:
-        - Experience: Captures job roles, companies, descriptions, and duration.
-        - Education: Captures universities, degrees, and majors.
-        - Certification: Captures certification titles, issuers, and dates.
-        - Professional: Captures profile summaries, industries, and overall experience/education counts.
+        input_ids = self.tokenizer.apply_chat_template(messages, return_tensors="pt").to(self.device)
         
-        ### 4. CLASSIFICATION TASK:
-        Assign exactly one 'query_type' based on these definitions:
-        - "stats": Requests for counts, lists, or simple aggregations existing within the schema.
-        - "multi_step_analysis": Complex requests requiring path traversals, comparisons, or multi-node correlations.
-        - "out_of_scope": The question cannot be answered using the provided Schema or Available Embeddings. Be highly critical; if the data is missing, select this type.
-
-        ### 5. ENTITY EXTRACTION:
-        Identify all conceptual entities requiring semantic (vector) search. Map them to the correct 'embedding_name' found in the Vector Indexes section of the context.
-
-        ### 6. OUTPUT REQUIREMENTS:
-        - Provide a clear 'reasoning' for your classification. If 'out_of_scope', explicitly state what data is missing from the schema.
-        - Return ONLY valid JSON matching the exact format below.
-
-        EXPECTED JSON FORMAT:
-        {{
-            "query_type": "stats" | "multi_step_analysis" | "out_of_scope",
-            "reasoning": "Explain why this is stats vs analysis.",
-            "embeddings_needed": [
-                {{
-                    "variable_name": "Unique variable name (e.g., emb_role)", 
-                    "search_text": "Conceptual search term (e.g., 'Software Developer')", 
-                    "embedding_name": "<Target Index Name from Schema>"
-                }}
-            ]
-        }}
-        """
-        self.log("Planning", "Analyzing intent and extracting entities...")
+        outputs = self.model.generate(
+            input_ids,
+            max_new_tokens=512,
+            temperature=0.1,
+            do_sample=False
+        )
         
-        res = ollama.generate(model=LLM_MODEL, prompt=prompt)
+        # Decode only the generated response
+        response_text = self.tokenizer.decode(outputs[0][input_ids.shape[-1]:], skip_special_tokens=True)
         
-        try:
-            # Clean potential markdown from LLM output
-            clean_json = re.sub(r"```json|```", "", res['response']).strip()
-            return json.loads(clean_json)
-        except json.JSONDecodeError:
-            self.log("Error", "Failed to parse JSON plan.", res['response'])
-            return {"query_type": "fallback", "embeddings_needed": []}
-
-    def generate_cypher_query(self, user_query, schema_context, plan):
-        """Step 3: Generate Cypher using the dynamically created embedding variables."""
-        query_type = plan.get("query_type")
+        # Clean formatting
+        clean_cypher = re.sub(r"```cypher|```", "", response_text).strip()
         
-        available_vars = "\n".join([
-            f"- Parameter: ${item['variable_name']} | Target Embedding: '{item['embedding_name']}' | Search: '{item['search_text']}'" 
-            for item in plan.get('embeddings_needed', [])
-        ])
+        self.log("Cypher Generation", "Generated Cypher", data=clean_cypher)
+        return clean_cypher
 
-        if query_type == 'stats':
-            prompt = f"""
-            Role: Neo4j Cypher Expert.
-            Task: Generate a high-performance, "Vector-First" Cypher query using the provided Schema and Parameters.
-
-            ### 1. CONTEXT
-            - SCHEMA: {schema_context}
-            - PARAMETERS: {available_vars}
-
-            ### 2. CORE PERFORMANCE RULES (MANDATORY)
-            - **Vector-First Entry**: NEVER start with a generic `MATCH`. The query must always start with a `CALL db.index.vector.queryNodes(...)` as the primary filter.
-            - **No Redundant Filtering**: If a concept is provided as a vector parameter (e.g., $emb_role), DO NOT use `WHERE` or property maps (e.g., `{{name: '...'}}`) to re-filter that same concept. Trust the embedding.
-            - **No Inefficient Loops**: Never place a `CALL` immediately after a `WITH` without first using `collect()`. Avoid O(N*M) nested lookups.
-
-            ### 3. LOGICAL PATTERNS
-            - **INTERSECTION (AND)**: Use when narrowing one entity (e.g., "Python Developer").
-                *Syntax*: CALL (Term A) -> Collect -> CALL (Term B) -> Filter `WHERE node_B IN list_A`.
-            - **UNION (OR)**: Use when combining categories (e.g., "Junior or Fresher").
-                *Syntax*: CALL (Term A) -> Collect -> CALL (Term B) -> Collect -> `apoc.coll.union(list_A, list_B)` -> UNWIND -> Count.
-
-            ### 4. REFERENCE EXAMPLES
-            
-            ✅ CORRECT (Counting Professionals via Experience):
-            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score
-            WHERE score > 0.8
-            MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp)
-            RETURN count(DISTINCT p)
-
-            ✅ CORRECT (OR Logic for Junior or Fresher):
-            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_junior) YIELD node AS n1, score WHERE score > 0.8
-            WITH collect(n1) AS list1
-            CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_fresher) YIELD node AS n2, score WHERE score > 0.8
-            WITH list1, collect(n2) AS list2
-            WITH apoc.coll.union(list1, list2) AS combined
-            UNWIND combined AS result
-            RETURN count(DISTINCT result)
-
-            ### 5. EXECUTION
-            User Question: "{user_query}"
-
-            RETURN RAW CYPHER ONLY. NO MARKDOWN. NO EXPLANATION.
-            """
-
-        elif query_type == 'multi_step_analysis':
-            prompt = f"""
-            Role: Neo4j Graph Data Scientist & Strategic Researcher.
-            
-            ### PIPELINE CONTEXT:
-            You are the 'Extraction Agent' in a 3-stage GraphRAG pipeline:
-            1. Planner (Current Stage): You break the user's question into Cypher tasks.
-            2. Executor: A Python runner executes these tasks against Neo4j.
-            3. Synthesizer (Final Stage): A Final LLM reads the results of all tasks to answer the user.
-            
-            ### OBJECTIVE:
-            Generate a sequence of Cypher queries that provide the Synthesizer with a clear, evidentiary data trail to answer: "{user_query}"
-
-            ### SYSTEM CONSTRAINTS:
-            1. **Live Schema**: {schema_context}
-            2. **Parameters**: {available_vars}
-            3. **Vector Syntax**: `CALL db.index.vector.queryNodes(target_embedding, top_k, $param) YIELD node, score WHERE score > 0.8`.
-            4. **No Hallucinations**: Only use labels/properties provided in the schema context.
-            
-            ### STRICT VECTOR LIMIT & TRAVERSAL RULES:
-            1. **Path-Walking/ID-Extraction**: You MUST set `top_k` to `1000`. 
-            2. **Stats/Aggregation**: You MUST set `top_k` to `100000`. Never use arbitrary numbers like 50.
-
-            ### CRITICAL CYPHER SYNTAX RULES:
-            1. **ID Extraction**: ALWAYS use `elementId(node)`. NEVER use the deprecated `id(node)` function.
-            2. **Single Column Return Rule**: Intermediate steps used to pass IDs to subsequent steps MUST return EXACTLY ONE column (`RETURN elementId(node) AS id`). Returning multiple columns will break the Python pipeline's list flattening logic.
-            3. **Consuming Previous IDs**: Use `$step1_ids`, `$step2_ids`, etc., dynamically assigned by the executor. Example: `WHERE elementId(n) IN $step1_ids`. Do not invent parameter names.
-            4. **Max Steps**: Generate a maximum of 3 steps.
-
-            ### TASK DESIGN PHILOSOPHY:
-            - **Discovery**: Steps 1 & 2 extract anchor IDs using embeddings with `top_k: 1000`.
-            - **Correlation**: Middle steps bridge nodes via `MATCH` and `WHERE elementId(n) IN $stepN_ids`, returning a single column of target IDs.
-            - **Synthesis**: The final step executes the comparison or counting using `UNWIND $stepN_results` to rehydrate and compare previous data.
-
-            ### OUTPUT FORMAT:
-            Return ONLY a JSON object with the following structure:
-            {{
-                "tasks": [
-                    {{
-                        "step": 1,
-                        "description": "description of the cypher",
-                        "cypher": "cypher here"
-                    }}
-                ]
-            }}
-            """
-        else:
-            return ""
-        
-        self.log("Cypher Generation", f"Generating {plan.get('query_type')} query using dynamic parameters...")
-        # self.log("Cypher Generation", f"{prompt}")
-        res = ollama.generate(model=LLM_MODEL, prompt=prompt)
-        return re.sub(r"```json|```cypher|```", "", res['response']).strip()
-
-    def execute_query(self, cypher, params):
+    def execute_query(self, cypher, params=None):
+        params = params or {}
         print(cypher)
         with self.driver.session() as session:
             try:
@@ -301,14 +182,13 @@ class GraphRAGPipeline:
 
                 self.log(
                     "Neo4j Query",
-                    f"Executed in {t1 - t0:.2f}s  |  Rows returned: {len(data)}\n\nCypher:\n{cypher}"
+                    f"Executed in {t1 - t0:.2f}s  |  Rows returned: {len(data)}"
                 )
 
                 return data
             except Exception as e:
                 self.log("Neo4j Error", f"Query failed: {str(e)}\n\nCypher:\n{cypher}")
                 return [f"Cypher Error: {str(e)}"]
-
 
     def generate_final_answer(self, user_query, db_data):
         prompt = f"""
@@ -326,67 +206,33 @@ class GraphRAGPipeline:
         print(f"\n--- Processing: {user_query} ---")
         
         context = self.cached_context
-        # ── STAGE 2: Planning ────────────────────────────────────────────────────
+        
+        # ── STAGE 1: Cypher Generation ───────────────────────────────────────────
         t0 = time.time()
-        plan = self.plan_execution(user_query, context)
+        cypher_query = self.generate_cypher_query(user_query, context)
         t1 = time.time()
         self.log(
             "Timing",
-            f"[2/4] plan_execution  |  model: {LLM_MODEL}  |  {t1 - t0:.2f}s  |  type: {plan.get('query_type')}"
+            f"[1/2] generate_cypher_query  |  model: {HF_MODEL_ID}  |  {t1 - t0:.2f}s"
         )
-
-        if plan.get('query_type') == 'out_of_scope':
+        
+        if not cypher_query:
             return {
                 "user_query": user_query,
                 "final_data": None,
-                "error": plan.get('reasoning')
+                "error": "Failed to generate Cypher query."
             }
 
-        # ── STAGE 3: Embeddings ──────────────────────────────────────────────────
-        query_params = {}
-        for entity in plan.get('embeddings_needed', []):
-            t0 = time.time()
-            query_params[entity['variable_name']] = self.get_embedding(entity['search_text'])
-            t1 = time.time()
-            self.log(
-                "Timing",
-                f"[3/4] get_embedding  |  model: {EMBED_MODEL}  |  {t1 - t0:.2f}s  |  term: '{entity['search_text']}'"
-            )
-
-        # ── STAGE 4: Cypher Generation ───────────────────────────────────────────
+        # ── STAGE 2: Query Execution ───────────────────────────────────────────
         t0 = time.time()
-        raw_output = self.generate_cypher_query(user_query, context, plan)
+        final_data = self.execute_query(cypher_query, {})
         t1 = time.time()
         self.log(
             "Timing",
-            f"[4/4] generate_cypher_query  |  model: {LLM_MODEL}  |  {t1 - t0:.2f}s"
+            f"[2/2] execute_query  |  {t1 - t0:.2f}s"
         )
-
-        results_registry = {}
-
-        if plan.get('query_type') == 'multi_step_analysis':
-            try:
-                task_data = json.loads(raw_output)
-                tasks = task_data.get("tasks", [])
-                for task in tasks:
-                    step_id = task['step']
-                    cypher_query = task['cypher']
-
-                    for prev_step, prev_data in results_registry.items():
-                        query_params[f"step{prev_step}_results"] = prev_data
-                        extracted_ids = [list(record.values())[0] for record in prev_data] if prev_data else []
-                        query_params[f"step{prev_step}_ids"] = extracted_ids
-
-                    step_result = self.execute_query(cypher_query, query_params)
-                    results_registry[step_id] = step_result
-                final_data = results_registry
-            except json.JSONDecodeError:
-                return {"user_query": user_query, "final_data": None, "error": "Multi-step JSON parse error"}
-        else:
-            final_data = self.execute_query(raw_output, query_params)
 
         return {
             "user_query": user_query,
             "final_data": final_data
         }
-
