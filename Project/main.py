@@ -2,6 +2,7 @@ import json
 from flask import Flask, request, jsonify, render_template
 from graph_rag import GraphRAGPipeline
 import time
+import re
 
 app = Flask(__name__)
 pipeline = GraphRAGPipeline()
@@ -109,6 +110,4 @@ def chat():
 
 
 if __name__ == "__main__":
-    import re
-
     app.run(debug=True, port=4500)
