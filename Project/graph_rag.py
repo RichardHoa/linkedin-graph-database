@@ -31,6 +31,46 @@ class GraphRAGPipeline:
         self.log("init", f"Loading Hugging Face model {HF_MODEL_ID} on {self.device}...")
         
         self.tokenizer = AutoTokenizer.from_pretrained(HF_MODEL_ID)
+        self.tokenizer.chat_template = """{{ bos_token }}
+{%- if messages[0]['role'] == 'system' -%}
+    {%- if messages[0]['content'] is string -%}
+        {%- set first_user_prefix = messages[0]['content'] + '\\n\\n' -%}
+    {%- else -%}
+        {%- set first_user_prefix = messages[0]['content'][0]['text'] + '\\n\\n' -%}
+    {%- endif -%}
+    {%- set loop_messages = messages[1:] -%}
+{%- else -%}
+    {%- set first_user_prefix = "" -%}
+    {%- set loop_messages = messages -%}
+{%- endif -%}
+{%- for message in loop_messages -%}
+    {%- if (message['role'] == 'user') != (loop.index0 % 2 == 0) -%}
+        {{ raise_exception("Conversation roles must alternate user/assistant/user/assistant/...") }}
+    {%- endif -%}
+    {%- if (message['role'] == 'assistant') -%}
+        {%- set role = "model" -%}
+    {%- else -%}
+        {%- set role = message['role'] -%}
+    {%- endif -%}
+    {{ '<start_of_turn>' + role + '\\n' + (first_user_prefix if loop.first else "") }}
+    {%- if message['content'] is string -%}
+        {{ message['content'] | trim }}
+    {%- elif message['content'] is iterable -%}
+        {%- for item in message['content'] -%}
+            {%- if item['type'] == 'image' -%}
+                {{ '<image>' }}
+            {%- elif item['type'] == 'text' -%}
+                {{ item['text'] | trim }}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- else -%}
+        {{ raise_exception("Invalid content type") }}
+    {%- endif -%}
+    {{ '<end_of_turn>\\n' }}
+{%- endfor -%}
+{%- if add_generation_prompt -%}
+    {{'<start_of_turn>model\\n'}}
+{%- endif -%}"""
         
         if self.device == "cuda":
             from transformers import BitsAndBytesConfig
@@ -142,6 +182,7 @@ class GraphRAGPipeline:
         inputs = self.tokenizer.apply_chat_template(
             messages, 
             add_generation_prompt=True, 
+            return_dict=True,
             return_tensors="pt"
         ).to(self.device)
         
@@ -195,5 +236,6 @@ class GraphRAGPipeline:
         final_data = self.execute_query(cypher_query, {})
         return {
             "user_query": user_query,
+            "cypher_query": cypher_query,
             "final_data": final_data
         }
