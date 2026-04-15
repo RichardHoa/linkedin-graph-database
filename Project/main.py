@@ -8,22 +8,26 @@ pipeline = GraphRAGPipeline()
 
 chat_histories = {}
 
-@app.route('/')
-def index():
-    return render_template('index.html')
 
-@app.route('/chat', methods=['POST'])
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/chat", methods=["POST"])
 def chat():
     t0 = time.time()
-    user_message = request.json.get('message')
+    user_message = request.json.get("message")
     if not user_message:
         return jsonify({"error": "No message provided"}), 400
 
-    session_id = request.remote_addr 
+    session_id = request.remote_addr
     if session_id not in chat_histories:
         chat_histories[session_id] = []
 
-    history_str = "\n".join([f"{m['role']}: {m['content']}" for m in chat_histories[session_id]])
+    history_str = "\n".join(
+        [f"{m['role']}: {m['content']}" for m in chat_histories[session_id]]
+    )
 
     router_prompt = f"""
     Role: Lead Orchestrator for a LinkedIn GraphRAG system.
@@ -44,8 +48,11 @@ def chat():
     """
 
     messages = [
-        {"role": "system", "content": "You are a professional assistant. You must respond in valid JSON format only."},
-        {"role": "user", "content": router_prompt}
+        {
+            "role": "system",
+            "content": "You are a professional assistant. You must respond in valid JSON format only.",
+        },
+        {"role": "user", "content": router_prompt},
     ]
 
     # Use HF model instead of Ollama for routing
@@ -54,19 +61,26 @@ def chat():
         router_data = json.loads(re.sub(r"```json|```", "", router_res).strip())
     except:
         # Fallback if model fails to output clean JSON
-        router_data = {"action": "QUERY_GRAPH", "reply": "", "refined_query": user_message}
+        router_data = {
+            "action": "QUERY_GRAPH",
+            "reply": "",
+            "refined_query": user_message,
+        }
 
-    if router_data['action'] != "QUERY_GRAPH":
-        ai_reply = router_data['reply']
+    if router_data["action"] != "QUERY_GRAPH":
+        ai_reply = router_data["reply"]
         chat_histories[session_id].append({"role": "user", "content": user_message})
         chat_histories[session_id].append({"role": "assistant", "content": ai_reply})
         return jsonify({"reply": ai_reply, "isErr": False})
 
     # Proceed to GraphRAG with the refined query
-    rag_response = pipeline.run(router_data['refined_query'])
-    
+    rag_response = pipeline.run(router_data["refined_query"])
+
     if "error" in rag_response:
-        return jsonify({"reply": f"System Error: {rag_response['error']}", "isErr": True}), 500
+        return (
+            jsonify({"reply": f"System Error: {rag_response['error']}", "isErr": True}),
+            500,
+        )
 
     answer_prompt = f"""
     You are a professional assistant analyzing LinkedIn graph data.
@@ -76,23 +90,25 @@ def chat():
     
     INSTRUCTIONS: Answer based ONLY on the retrieved data. Be concise.
     """
-    
+
     answer_messages = [
         {"role": "system", "content": "You are a helpful data analyst assistant."},
-        {"role": "user", "content": answer_prompt}
+        {"role": "user", "content": answer_prompt},
     ]
-    
+
     # Use HF model instead of Ollama for final answer
     ai_reply = pipeline.generate_completion(answer_messages)
 
     chat_histories[session_id].append({"role": "user", "content": user_message})
     chat_histories[session_id].append({"role": "assistant", "content": ai_reply})
-    
+
     t1 = time.time()
     print(f"{t1-t0:.2f}s for the request")
 
     return jsonify({"reply": ai_reply, "isErr": False})
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import re
-    app.run(debug=True, port=5000)
+
+    app.run(debug=True, port=4500)
