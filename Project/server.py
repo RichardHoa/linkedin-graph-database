@@ -22,8 +22,6 @@ def chat():
     if not user_message:
         return jsonify({"error": "No message provided"}), 400
 
-    # Streamlined RAG flow: bypass routing and reasoning steps.
-    # Feed user query directly to text-to-cypher pipeline.
     rag_response = pipeline.run(user_message)
     
     final_data = rag_response.get("final_data", [])

@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from neo4j_graphrag.schema import get_schema
+import sys
+sys.path.append('CyVer')
+from CyVer import SyntaxValidator, SchemaValidator, PropertiesValidator
 
 load_dotenv()
 
@@ -22,55 +26,18 @@ class GraphRAGPipeline:
         self.driver = driver
         self.log_indent = log_indent
         
-        # FIX: Initialize device first to avoid AttributeError
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         self.log("init", "Initializing System Context...")
         self.cached_context = self.get_system_context()
         
+        self.syntax_validator = SyntaxValidator(self.driver, check_multilabeled_nodes=False)
+        self.schema_validator = SchemaValidator(self.driver)
+        self.props_validator = PropertiesValidator(self.driver)
+        
         self.log("init", f"Loading Hugging Face model {HF_MODEL_ID} on {self.device}...")
         
         self.tokenizer = AutoTokenizer.from_pretrained(HF_MODEL_ID)
-        self.tokenizer.chat_template = """{{ bos_token }}
-{%- if messages[0]['role'] == 'system' -%}
-    {%- if messages[0]['content'] is string -%}
-        {%- set first_user_prefix = messages[0]['content'] + '\\n\\n' -%}
-    {%- else -%}
-        {%- set first_user_prefix = messages[0]['content'][0]['text'] + '\\n\\n' -%}
-    {%- endif -%}
-    {%- set loop_messages = messages[1:] -%}
-{%- else -%}
-    {%- set first_user_prefix = "" -%}
-    {%- set loop_messages = messages -%}
-{%- endif -%}
-{%- for message in loop_messages -%}
-    {%- if (message['role'] == 'user') != (loop.index0 % 2 == 0) -%}
-        {{ raise_exception("Conversation roles must alternate user/assistant/user/assistant/...") }}
-    {%- endif -%}
-    {%- if (message['role'] == 'assistant') -%}
-        {%- set role = "model" -%}
-    {%- else -%}
-        {%- set role = message['role'] -%}
-    {%- endif -%}
-    {{ '<start_of_turn>' + role + '\\n' + (first_user_prefix if loop.first else "") }}
-    {%- if message['content'] is string -%}
-        {{ message['content'] | trim }}
-    {%- elif message['content'] is iterable -%}
-        {%- for item in message['content'] -%}
-            {%- if item['type'] == 'image' -%}
-                {{ '<image>' }}
-            {%- elif item['type'] == 'text' -%}
-                {{ item['text'] | trim }}
-            {%- endif -%}
-        {%- endfor -%}
-    {%- else -%}
-        {{ raise_exception("Invalid content type") }}
-    {%- endif -%}
-    {{ '<end_of_turn>\\n' }}
-{%- endfor -%}
-{%- if add_generation_prompt -%}
-    {{'<start_of_turn>model\\n'}}
-{%- endif -%}"""
         
         if self.device == "cuda":
             from transformers import BitsAndBytesConfig
@@ -107,75 +74,7 @@ class GraphRAGPipeline:
 
     def get_system_context(self):
         """Retrieves the LIVE database state."""
-        with self.driver.session(database=DB_NAME) as session:
-            # 1. Grouped Graph Structure
-            schema_query = """
-            CALL apoc.meta.graph() YIELD nodes, relationships
-            UNWIND relationships AS rel
-            WITH startNode(rel).name AS source, type(rel) AS rel_type, endNode(rel).name AS target
-            RETURN source, rel_type, target ORDER BY source
-            """
-            schema_data = session.run(schema_query).data()
-            formatted_schema = [f"(:{r['source']})-[:{r['rel_type']}]->(:{r['target']})" for r in schema_data]
-    
-            # 2. Properties with Examples
-            props_query = """
-            CALL apoc.meta.nodeTypeProperties() 
-            YIELD nodeLabels, propertyName, propertyTypes 
-            WITH nodeLabels[0] AS label, propertyName, propertyTypes[0] AS type
-            WHERE NOT propertyName IN ['embedding', 'embedding_summary']
-            ORDER BY label, propertyName
-            CALL (label, propertyName) {
-                MATCH (n) 
-                WHERE label IN labels(n) AND n[propertyName] IS NOT NULL
-                RETURN n[propertyName] AS sample_value 
-                LIMIT 1
-            }
-            RETURN label, propertyName, type, sample_value
-            """
-            props_data = session.run(props_query).data()
-            
-            props_dict = {}
-            for p in props_data:
-                label = p['label']
-                if label not in props_dict:
-                    props_dict[label] = []
-                val = p['sample_value']
-                if isinstance(val, str):
-                    example = f"'{val[:50]}...'" if len(val) > 50 else f"'{val}'"
-                else:
-                    example = str(val)
-                props_dict[label].append(f"\n  - {p['propertyName']} ({p['type']}): {example}")
-    
-            # 3. Vector Indexes
-            index_query = """
-            SHOW INDEXES YIELD name, type, labelsOrTypes 
-            WHERE type = 'VECTOR' 
-            RETURN name, labelsOrTypes[0] AS label
-            """
-            index_records = session.run(index_query).data()
-            
-            formatted_indexes = []
-            for idx in index_records:
-                label = idx['label']
-                summary_sample = session.run(
-                    f"MATCH (n:{label}) WHERE n.embedding_summary IS NOT NULL RETURN n.embedding_summary LIMIT 1"
-                ).single()
-                sample_text = summary_sample[0] if summary_sample else "No summary available"
-                formatted_indexes.append(
-                    f"Index: {idx['name']} (Label: {label})\n"
-                    f"   -> Sample embedding_summary: \"{sample_text[:200]}...\""
-                )
-    
-        context = ["### LIVE DATABASE SCHEMA (LLM CONTEXT GUIDE)"]
-        context.append("\n**1. GRAPH STRUCTURE (Grouped by Source):**")
-        context.extend(list(dict.fromkeys(formatted_schema)))
-        context.append("\n**2. NODE PROPERTIES & EXAMPLES:**")
-        for label, properties in props_dict.items():
-            context.append(f"- **{label}**: {'; '.join(properties)}")
-        context.append("\n**3. VECTOR INDEXES:**")
-        context.extend(formatted_indexes)
-        return "\n".join(context)
+        return get_schema(self.driver, is_enhanced=False, database=DB_NAME, sanitize=False)
 
     def generate_completion(self, messages, max_tokens=512):
         """Generic text generation helper to replace Ollama."""
@@ -198,9 +97,15 @@ class GraphRAGPipeline:
         return response_text.strip()
 
     def generate_cypher_query(self, user_query, schema_context):
-        prompt = f"Given the following Neo4j Graph Schema:\n{schema_context}\n\nGenerate a valid Cypher query to answer the user question:\n{user_query}"
+        USER_PROMPT_TEMPLATE="""Generate a Cypher query for the Question below.
+Use the information about the nodes, relationships, and properties from the Schema section below to generate the best possible Cypher query.
+Return only the Cypher query as your final output, without any additional text or explanation.
+####Schema:
+{schema}
+####Question:
+{question}"""
+        prompt = USER_PROMPT_TEMPLATE.format(schema=schema_context, question=user_query)
         messages = [
-            {"role": "system", "content": "You are a Neo4j Cypher expert. Convert the user's natural language question into a Cypher query using the provided schema. Return ONLY the raw cypher code."},
             {"role": "user", "content": prompt}
         ]
         res = self.generate_completion(messages)
@@ -233,6 +138,35 @@ class GraphRAGPipeline:
     def run(self, user_query):
         context = self.cached_context
         cypher_query = self.generate_cypher_query(user_query, context)
+        
+        is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME)
+        if not is_valid:
+            return {
+                "user_query": user_query,
+                "cypher_query": cypher_query,
+                "final_data": [{"error": f"CyVer Syntax Error: {syntax_meta}"}]
+            }
+            
+        extracted_node_labels, extracted_rel_labels, extracted_paths = self.schema_validator.extract(cypher_query, database_name=DB_NAME)
+        self.log("Validation", f"Schema extracted nodes: {extracted_node_labels}, rels: {extracted_rel_labels}")
+        schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
+        if schema_score != 1:
+            return {
+                "user_query": user_query,
+                "cypher_query": cypher_query,
+                "final_data": [{"error": f"CyVer Schema Validation Error: {schema_meta}"}]
+            }
+            
+        variables_properties, labels_properties = self.props_validator.extract(cypher_query, strict=False, database_name=DB_NAME)
+        self.log("Validation", f"Props extracted variables: {variables_properties}, labels: {labels_properties}")
+        props_score, props_meta = self.props_validator.validate(cypher_query, database_name=DB_NAME, strict=False)
+        if props_score is not None and props_score != 1:
+            return {
+                "user_query": user_query,
+                "cypher_query": cypher_query,
+                "final_data": [{"error": f"CyVer Properties Validation Error: {props_meta}"}]
+            }
+            
         final_data = self.execute_query(cypher_query, {})
         return {
             "user_query": user_query,
