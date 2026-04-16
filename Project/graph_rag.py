@@ -291,7 +291,7 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
         valid_vector_cypher = False
         for attempt in range(max_retries):
             self.log("Validation", f"Attempt {attempt + 1}: Validating Transformation...")
-            is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME, params=dummy_params)
+            is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME)
             
             # If the error is ONLY about missing parameters, it's actually syntactically valid for our purposes
             if not is_valid and any("Missing parameters" in str(err) for err in (syntax_meta if isinstance(syntax_meta, list) else [syntax_meta])):
