@@ -21,7 +21,6 @@ DB_NAME = "neo4j"
 
 HF_MODEL_ID = "neo4j/text-to-cypher-Gemma-3-4B-Instruct-2025.04.0"
 EMBED_MODEL = "mxbai-embed-large"
-EXPANSION_MODEL = "phi3:3.8b"
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
 
@@ -136,27 +135,6 @@ class GraphRAGPipeline:
             self.log("Embedding Error", f"Failed to generate embedding: {str(e)}")
             return None
 
-    def expand_query_keywords(self, user_query):
-        """Uses a lightweight model to broaden search terms for embedding."""
-        self.log("expansion", f"Expanding keywords for: {user_query}")
-        prompt = f"""Given the search query below, identify the primary technical role, company, or professional concept. 
-Provide 2-3 broad, common synonyms or related terms to ensure high recall in a vector search.
-Example: 'developer' -> 'software engineer programmer developer'
-Example: 'find people at google' -> 'google alphabet'
-
-Return ONLY the space-separated keywords. No explanation.
-Query: {user_query}"""
-        
-        try:
-            res = ollama.generate(model=EXPANSION_MODEL, prompt=prompt, stream=False)
-            keywords = res['response'].strip().lower()
-            # Clean up potential markdown or prefixes the small model might add
-            keywords = re.sub(r'keywords:|result:|"', '', keywords).strip()
-            self.log("expansion", f"Result: {keywords}")
-            return keywords
-        except Exception as e:
-            self.log("Expansion Error", f"Failed to expand keywords: {str(e)}")
-            return user_query
 
     def generate_completion(self, messages, max_tokens=512):
         """Generic text generation helper to replace Ollama."""
@@ -193,7 +171,7 @@ Question: "How many developer are there?"
 Cypher: CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN count(DISTINCT p) AS numberOfDevs
 
 Question: "Who has the linkedin id '123'?"
-Cypher: MATCH (p:Professional {linkedin_id: '123'}) RETURN p.name
+Cypher: MATCH (p:Professional {{linkedin_id: '123'}}) RETURN p.name
 
 ####Schema:
 {schema}
@@ -257,10 +235,7 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
         context = self.cached_context
         max_retries = 3
         
-        # Step 1: Pre-expand keywords for potential vector search
-        expanded_keywords = self.expand_query_keywords(user_query)
-        
-        # Step 2: Generate Cypher (raw text, no JSON)
+        # Generate Cypher (raw text, no JSON)
         cypher_query = self.generate_cypher_query(user_query, context)
         
         # Step 3: Self-correction loop for syntax errors
@@ -284,8 +259,8 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
         # Step 4: Inject embedding parameter if needed
         params = {}
         if "$embedding" in cypher_query:
-            self.log("embedding", f"Generating vector for expanded keywords: {expanded_keywords}")
-            vector = self.get_embedding(expanded_keywords)
+            self.log("embedding", f"Generating vector for query: {user_query}")
+            vector = self.get_embedding(user_query)
             if vector:
                 params["embedding"] = vector
             else:
