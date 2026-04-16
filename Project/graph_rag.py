@@ -167,9 +167,11 @@ class GraphRAGPipeline:
         
         ### Rules:
         1. Target Vector Index: 'experience_embeddings'
-        2. Boilerplate: CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) YIELD node, score WHERE score > 0.8
-        3. Use the variable 'node' as the semantic anchor for subsequent MATCH clauses.
-        4. Extract the core role or skill being filtered in the original query as the 'embedding_term'.
+        2. Parameter Name: Use '$emb_role' for the embedding vector.
+        3. Boilerplate: CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score WHERE score > 0.8
+        4. Matching Pattern: Use `MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp)` to link professionals to the semantic experience nodes.
+        5. Extraction: Extract the specific role/skill to embed as 'embedding_term'.
+        6. Clean Up: Remove standard property filters (like {role: '...'}) that are now handled by the semantic search.
         
         Respond ONLY with a JSON object:
         {{
@@ -293,17 +295,17 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
 
         # Stage 4: Inject embedding parameter if needed
         params = {}
-        if semantic_term and "$embedding" in cypher_query:
+        if semantic_term and "$emb_role" in cypher_query:
             self.log("embedding", f"Generating vector for semantic term: {semantic_term}")
             vector = self.get_embedding(semantic_term)
             if vector:
-                params["embedding"] = vector
+                params["emb_role"] = vector
             else:
                 self.log("embedding", "Proceeding without embedding due to generation failure.")
-        elif "$embedding" in cypher_query:
+        elif "$emb_role" in cypher_query:
             self.log("embedding", f"Fallback: Generating vector for query: {user_query}")
             vector = self.get_embedding(user_query)
-            if vector: params["embedding"] = vector
+            if vector: params["emb_role"] = vector
 
         # Step 5: Final validation and execution
         schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
