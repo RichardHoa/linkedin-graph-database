@@ -171,7 +171,7 @@ class GraphRAGPipeline:
         3. Boilerplate: CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score WHERE score > 0.8
         4. Matching Pattern: Use `MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp)` to link professionals to the semantic experience nodes.
         5. Extraction: Extract the specific role/skill to embed as 'embedding_term'.
-        6. Clean Up: Remove standard property filters (like {role: '...'}) that are now handled by the semantic search.
+        6. Clean Up: Remove standard property filters (like {{role: '...'}}) that are now handled by the semantic search.
         
         Respond ONLY with a JSON object:
         {{
