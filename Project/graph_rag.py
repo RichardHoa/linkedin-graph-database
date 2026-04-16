@@ -291,23 +291,37 @@ Use only the provided relationship types, node labels, and properties from the S
         return cypher.strip()
 
     def fix_cypher_syntax(self, bad_cypher, error_msg, schema_context):
-        """Asks the model to fix a syntactically incorrect Cypher query."""
-        self.log("Correction", f"Sending error feedback to LLM...")
-        prompt = f"""The following Cypher query generated for the database schema below is syntactically INCORRECT.
-#### Schema:
+        """Asks the model to fix a syntactically incorrect Cypher query using Qwen2.5-Coder."""
+        self.log("Correction", f"Sending error feedback to Ollama (qwen2.5-coder:14b)...")
+        prompt = f"""You are a Neo4j Cypher expert. The query below is INVALID.
+Fix it while strictly adhering to the database schema and the latest Cypher 25 syntax.
+
+### DATABASE SCHEMA:
 {schema_context}
 
-#### Faulty Query:
-{bad_cypher}
-
-#### Error Message:
+### ERROR MESSAGE:
 {error_msg}
 
-Please fix the syntax error and return ONLY the corrected Cypher query. No explanation. No JSON."""
+### SUBMITTED FAULTY QUERY:
+```cypher
+{bad_cypher}
+```
+
+### CRITICAL INSTRUCTIONS:
+1. If this is a Vector Search query, ensure it uses `CYPHER 25` and follows the multi-stage MATCH -> SEARCH -> MATCH pattern if applicable.
+2. Ensure all relationship types and labels match the schema EXACTLY.
+3. Fix any misspelled properties or misaligned patterns.
+4. Return ONLY the corrected Cypher query inside a markdown code block.
+5. DO NOT provide any explanation, preamble, or conversational filler."""
         
         messages = [{"role": "user", "content": prompt}]
-        res = self.generate_completion(messages)
-        return self.extract_cypher_only(res)
+        try:
+            res = ollama.chat(model="qwen2.5-coder:14b", messages=messages)
+            corrected_cypher = res['message']['content']
+            return self.extract_cypher_only(corrected_cypher)
+        except Exception as e:
+            self.log("Correction Error", f"Failed to call Ollama: {str(e)}")
+            return bad_cypher # Fallback
 
     def execute_query(self, cypher, params=None):
         params = params or {}
