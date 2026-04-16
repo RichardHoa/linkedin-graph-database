@@ -161,7 +161,27 @@ Use the information about the nodes, relationships, and properties from the Sche
 Respond ONLY with a JSON object in the following format:
 {{
   "cypher": "The generated Cypher query",
-  "embed_text": "If the query uses a vector index via $embedding, provide the specific word or phrase to be vectorized here. Otherwise, null."
+  "embed_text": "A specific broad keyword or phrase to vectorize if similarity search is needed (e.g., if user asks for 'developer', use 'software engineer'), else null."
+}}
+
+#### Guidelines:
+1. For statistical or counting questions (e.g., 'how many developers'), prioritize vector similarity search using a high k-value (e.g. 100000) and a score threshold (e.g. score > 0.8).
+2. Always use the `$embedding` parameter for the vector index queries.
+3. Be broad with `embed_text` to capture semantic matches (e.g. if the user says 'developer', 'software engineer' is a better embedding target).
+
+#### Examples:
+Question: "How many developer are there?"
+Response:
+{{
+  "cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN count(DISTINCT p) AS numberOfDevs",
+  "embed_text": "software engineer"
+}}
+
+Question: "Who has the linkedin id '123'?"
+Response:
+{{
+  "cypher": "MATCH (p:Professional {{linkedin_id: '123'}}) RETURN p.name",
+  "embed_text": null
 }}
 
 ####Schema:
