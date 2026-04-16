@@ -21,6 +21,7 @@ DB_NAME = "neo4j"
 
 HF_MODEL_ID = "neo4j/text-to-cypher-Gemma-3-4B-Instruct-2025.04.0"
 EMBED_MODEL = "mxbai-embed-large"
+EXPANSION_MODEL = "phi3:3.8b"
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
 
@@ -135,6 +136,28 @@ class GraphRAGPipeline:
             self.log("Embedding Error", f"Failed to generate embedding: {str(e)}")
             return None
 
+    def expand_query_keywords(self, user_query):
+        """Uses a lightweight model to broaden search terms for embedding."""
+        self.log("expansion", f"Expanding keywords for: {user_query}")
+        prompt = f"""Given the search query below, identify the primary technical role, company, or professional concept. 
+Provide 2-3 broad, common synonyms or related terms to ensure high recall in a vector search.
+Example: 'developer' -> 'software engineer programmer developer'
+Example: 'find people at google' -> 'google alphabet'
+
+Return ONLY the space-separated keywords. No explanation.
+Query: {user_query}"""
+        
+        try:
+            res = ollama.generate(model=EXPANSION_MODEL, prompt=prompt, stream=False)
+            keywords = res['response'].strip().lower()
+            # Clean up potential markdown or prefixes the small model might add
+            keywords = re.sub(r'keywords:|result:|"', '', keywords).strip()
+            self.log("expansion", f"Result: {keywords}")
+            return keywords
+        except Exception as e:
+            self.log("Expansion Error", f"Failed to expand keywords: {str(e)}")
+            return user_query
+
     def generate_completion(self, messages, max_tokens=512):
         """Generic text generation helper to replace Ollama."""
         inputs = self.tokenizer.apply_chat_template(
@@ -159,31 +182,18 @@ class GraphRAGPipeline:
         USER_PROMPT_TEMPLATE="""Generate a Cypher query for the Question below.
 Use the information about the nodes, relationships, and properties from the Schema section below to generate the best possible Cypher query.
 
-Respond ONLY with a JSON object in the following format:
-{{
-  "cypher": "The generated Cypher query",
-  "embed_text": "A specific broad keyword or phrase to vectorize if similarity search is needed (e.g., if user asks for 'developer', use 'software engineer'), else null."
-}}
+Respond ONLY with the Cypher query. No explanation. No JSON. No additional text.
 
 #### Guidelines:
-1. For statistical or counting questions (e.g., 'how many developers'), prioritize vector similarity search using a high k-value (e.g. 100000) and a score threshold (e.g. score > 0.8).
-2. Always use the `$embedding` parameter for the vector index queries.
-3. Be broad with `embed_text` to capture semantic matches (e.g. if the user says 'developer', 'software engineer' is a better embedding target).
+1. For statistical or counting questions (e.g., 'how many developers'), prioritize vector similarity search using a high k-value (100000) and a score threshold (e.g. score > 0.8).
+2. Use the `$embedding` parameter for similarity searches.
 
 #### Examples:
 Question: "How many developer are there?"
-Response:
-{{
-  "cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN count(DISTINCT p) AS numberOfDevs",
-  "embed_text": "software engineer"
-}}
+Cypher: CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN count(DISTINCT p) AS numberOfDevs
 
 Question: "Who has the linkedin id '123'?"
-Response:
-{{
-  "cypher": "MATCH (p:Professional {{linkedin_id: '123'}}) RETURN p.name",
-  "embed_text": null
-}}
+Cypher: MATCH (p:Professional {linkedin_id: '123'}) RETURN p.name
 
 ####Schema:
 {schema}
@@ -194,46 +204,21 @@ Response:
             {"role": "user", "content": prompt}
         ]
         res = self.generate_completion(messages)
-        return self.extract_cypher_and_embed(res)
+        return self.extract_cypher_only(res)
 
-    def extract_cypher_and_embed(self, res):
-        """Extracts structured data from model response using json_repair."""
-        cypher = ""
-        embed_text = None
+    def extract_cypher_only(self, res):
+        """Extracts the Cypher query from the model response, handling markdown blocks."""
+        cypher = res.strip()
+        if "```" in cypher:
+            match = re.search(r"```(?:cypher)?\s*(.*?)\s*```", cypher, re.DOTALL)
+            if match:
+                cypher = match.group(1)
+            else:
+                cypher = re.sub(r"```cypher|```", "", cypher)
         
-        try:
-            # Use json_repair to handle partially malformed JSON
-            repair_res = json_repair.repair_json(res, return_objects=True)
-            if isinstance(repair_res, dict):
-                cypher = repair_res.get("cypher", "")
-                embed_text = repair_res.get("embed_text")
-            
-            # If json_repair didn't get a dict, try regex as a deep fallback
-            if not cypher:
-                match = re.search(r"(\{.*?\})", res, re.DOTALL)
-                if match:
-                    data = json_repair.repair_json(match.group(1), return_objects=True)
-                    if isinstance(data, dict):
-                        cypher = data.get("cypher", "")
-                        embed_text = data.get("embed_text")
-            
-            # Final fallback to raw string if still empty
-            if not cypher:
-                cypher = res
-                if "```" in res:
-                    match = re.search(r"```(?:cypher)?\s*(.*?)\s*```", res, re.DOTALL)
-                    if match:
-                        cypher = match.group(1)
-                    else:
-                        cypher = re.sub(r"```cypher|```", "", res)
-        except Exception as e:
-            self.log("Extraction Error", f"Failed to parse model response: {str(e)}. Using raw output.")
-            cypher = res
-
         # Clean up literal backslash-n sequences
         cypher = cypher.replace('\\n', '\n')
-        
-        return cypher.strip(), embed_text
+        return cypher.strip()
 
     def fix_cypher_syntax(self, bad_cypher, error_msg, schema_context):
         """Asks the model to fix a syntactically incorrect Cypher query."""
@@ -248,12 +233,11 @@ Response:
 #### Error Message:
 {error_msg}
 
-Please fix the syntax error and return a VALID JSON object with the "cypher" and "embed_text" fields as described previously.
-Ensure the Cypher query is compatible with Neo4j and matches the schema exactly."""
+Please fix the syntax error and return ONLY the corrected Cypher query. No explanation. No JSON."""
         
         messages = [{"role": "user", "content": prompt}]
         res = self.generate_completion(messages)
-        return self.extract_cypher_and_embed(res)
+        return self.extract_cypher_only(res)
 
     def execute_query(self, cypher, params=None):
         params = params or {}
@@ -273,8 +257,13 @@ Ensure the Cypher query is compatible with Neo4j and matches the schema exactly.
         context = self.cached_context
         max_retries = 3
         
-        cypher_query, embed_text = self.generate_cypher_query(user_query, context)
+        # Step 1: Pre-expand keywords for potential vector search
+        expanded_keywords = self.expand_query_keywords(user_query)
         
+        # Step 2: Generate Cypher (raw text, no JSON)
+        cypher_query = self.generate_cypher_query(user_query, context)
+        
+        # Step 3: Self-correction loop for syntax errors
         for attempt in range(max_retries):
             self.log("Validation", f"Attempt {attempt + 1}: Validating Cypher...")
             is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME)
@@ -284,7 +273,7 @@ Ensure the Cypher query is compatible with Neo4j and matches the schema exactly.
             
             if attempt < max_retries - 1:
                 self.log("Correction", f"Syntax error detected: {syntax_meta}. Retrying...")
-                cypher_query, embed_text = self.fix_cypher_syntax(cypher_query, str(syntax_meta), context)
+                cypher_query = self.fix_cypher_syntax(cypher_query, str(syntax_meta), context)
             else:
                 return {
                     "user_query": user_query,
@@ -292,33 +281,24 @@ Ensure the Cypher query is compatible with Neo4j and matches the schema exactly.
                     "final_data": [{"error": f"CyVer Syntax Error after {max_retries} attempts: {syntax_meta}"}]
                 }
 
+        # Step 4: Inject embedding parameter if needed
         params = {}
-        if embed_text:
-            self.log("embedding", f"Generating vector for: {embed_text}")
-            vector = self.get_embedding(embed_text)
+        if "$embedding" in cypher_query:
+            self.log("embedding", f"Generating vector for expanded keywords: {expanded_keywords}")
+            vector = self.get_embedding(expanded_keywords)
             if vector:
                 params["embedding"] = vector
             else:
                 self.log("embedding", "Proceeding without embedding due to generation failure.")
 
-        # Continue with schema and property validation (one-shot for now, assuming syntax correction also helps schema)
-        extracted_node_labels, extracted_rel_labels, extracted_paths = self.schema_validator.extract(cypher_query, database_name=DB_NAME)
+        # Step 5: Final validation and execution
         schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
         if schema_score != 1:
-             return {
-                "user_query": user_query,
-                "cypher_query": cypher_query,
-                "final_data": [{"error": f"CyVer Schema Validation Error: {schema_meta}"}]
-            }
+             self.log("Schema Warning", f"Schema validation score: {schema_score}. Meta: {schema_meta}")
             
-        variables_properties, labels_properties = self.props_validator.extract(cypher_query, strict=False, database_name=DB_NAME)
         props_score, props_meta = self.props_validator.validate(cypher_query, database_name=DB_NAME, strict=False)
         if props_score is not None and props_score != 1:
-            return {
-                "user_query": user_query,
-                "cypher_query": cypher_query,
-                "final_data": [{"error": f"CyVer Properties Validation Error: {props_meta}"}]
-            }
+            self.log("Props Warning", f"Props validation score: {props_score}. Meta: {props_meta}")
             
         final_data = self.execute_query(cypher_query, params)
         return {
