@@ -67,25 +67,6 @@ class GraphRAGPipeline:
                 low_cpu_mem_usage=True
             ).to(self.device)
 
-        # Seed examples for Dynamic Few-Shot Prompting
-        self.few_shot_data = [
-            {
-                "question": "Find people with experience in React",
-                "cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 10, $embedding) YIELD node AS exp, score MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN p.name, score"
-            },
-            {
-                "question": "How many Python developers are there?",
-                "cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN count(DISTINCT p)"
-            },
-            {
-                "question": "Who works at Google?",
-                "cypher": "MATCH (p:Professional)-[:WORKS_AT]->(c:Company {name: 'Google'}) RETURN p.name"
-            }
-        ]
-        self.log("init", "Pre-embedding few-shot examples...")
-        for ex in self.few_shot_data:
-            ex["embedding"] = self.get_embedding(ex["question"])
-
     def log(self, stage, message, data=None):
         log_entry = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -175,54 +156,48 @@ class GraphRAGPipeline:
         response_text = self.tokenizer.decode(outputs[0][input_len:], skip_special_tokens=True)
         return response_text.strip()
 
-    def get_relevant_examples(self, user_query, k=2):
-        """Retrieves the most semantically relevant Cypher examples."""
-        query_vec = self.get_embedding(user_query)
-        if not query_vec:
-            return ""
+    def expand_macros(self, cypher):
+        """Expands custom macros into valid Neo4j 5.x Cypher syntax."""
+        semantic_term = None
         
-        def cosine_sim(v1, v2):
-            if not v1 or not v2: return 0
-            dot = sum(a * b for a, b in zip(v1, v2))
-            mag1 = sum(a * a for a in v1) ** 0.5
-            mag2 = sum(b * b for b in v2) ** 0.5
-            return dot / (mag1 * mag2) if (mag1 * mag2) > 0 else 0
-
-        scored_examples = []
-        for ex in self.few_shot_data:
-            score = cosine_sim(query_vec, ex["embedding"])
-            scored_examples.append((score, ex))
-        
-        # Sort by score and take top k
-        scored_examples.sort(key=lambda x: x[0], reverse=True)
-        top_examples = scored_examples[:k]
-        
-        example_str = ""
-        for score, ex in top_examples:
-            example_str += f"Question: \"{ex['question']}\"\nCypher: {ex['cypher']}\n\n"
-        return example_str.strip()
+        # Regex to find MATCH_SEMANTIC("term")
+        match = re.search(r'MATCH_SEMANTIC\("(.*?)"\)', cypher)
+        if match:
+            semantic_term = match.group(1)
+            # Expand to full Neo4j 5.x vector boilerplate
+            # Note: We use 'node' as the yield variable to maintain compatibility with downstream matches
+            replacement = (
+                f"CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) "
+                f"YIELD node, score WHERE score > 0.8"
+            )
+            cypher = cypher.replace(match.group(0), replacement)
+            
+        return cypher, semantic_term
 
     def generate_cypher_query(self, user_query, schema_context):
-        examples = self.get_relevant_examples(user_query)
-        
         USER_PROMPT_TEMPLATE="""Generate a Cypher query for the Question below.
-Use the information about the nodes, relationships, and properties from the Schema section below to generate the best possible Cypher query.
+Use the information about the nodes, relationships, and properties from the Schema section below.
 
-Respond ONLY with the Cypher query. No explanation. No JSON. No additional text.
+Respond ONLY with the Cypher query. No explanation. No additional text.
 
-#### Guidelines:
-1. For statistical or counting questions (e.g., 'how many developers'), prioritize vector similarity search using a high k-value (100000) and a score threshold (e.g. score > 0.8).
-2. Use the `$embedding` parameter for similarity searches.
-3. If using `db.index.vector.queryNodes`, always yield `node` and `score`.
+#### Instructions for Semantic Search:
+If the user asks for a professional role, skill, or subject-based search (e.g. 'developers', 'experts in React'), you MUST use the following macro at the START of your query:
+`MATCH_SEMANTIC("term")`
+Where "term" is the formal singular role or skill.
+Follow this macro with standard MATCH patterns using the variable `node`.
 
-#### Relevant Examples:
-{examples}
+#### Examples:
+Question: "How many Python developers are there?"
+Cypher: MATCH_SEMANTIC("Python developer") MATCH (p:Professional)-[:HAS_EXPERIENCE]->(node) RETURN count(DISTINCT p)
+
+Question: "Who has the linkedin id '123'?"
+Cypher: MATCH (p:Professional {{linkedin_id: '123'}}) RETURN p.name
 
 #### Schema:
 {schema}
 #### Question:
 {question}"""
-        prompt = USER_PROMPT_TEMPLATE.format(schema=schema_context, question=user_query, examples=examples)
+        prompt = USER_PROMPT_TEMPLATE.format(schema=schema_context, question=user_query)
         messages = [
             {"role": "user", "content": prompt}
         ]
@@ -301,15 +276,22 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
                     "final_data": [{"error": f"CyVer Syntax Error after {max_retries} attempts: {syntax_meta}"}]
                 }
 
-        # Step 4: Inject embedding parameter if needed
+        # Step 4: Macro expansion and parameter injection
+        cypher_query, semantic_term = self.expand_macros(cypher_query)
+        
         params = {}
-        if "$embedding" in cypher_query:
-            self.log("embedding", f"Generating vector for query: {user_query}")
-            vector = self.get_embedding(user_query)
+        if semantic_term:
+            self.log("embedding", f"Generating vector for semantic term: {semantic_term}")
+            vector = self.get_embedding(semantic_term)
             if vector:
                 params["embedding"] = vector
             else:
                 self.log("embedding", "Proceeding without embedding due to generation failure.")
+        elif "$embedding" in cypher_query:
+            # Fallback to full query if model used $embedding without macro (though forbidden)
+            self.log("embedding", f"Fallback: Generating vector for query: {user_query}")
+            vector = self.get_embedding(user_query)
+            if vector: params["embedding"] = vector
 
         # Step 5: Final validation and execution
         schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
