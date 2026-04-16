@@ -180,12 +180,6 @@ class GraphRAGPipeline:
             "embedding_term": "Python developer"
         }}
 
-        Standard Cypher: MATCH (p:Professional) WHERE p.role = 'Software engineer' RETURN p.name
-        Response: {{
-            "transformed_cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN p.name",
-            "embedding_term": "Software engineer"
-        }}
-
         Respond ONLY with a JSON object.
         """
         
@@ -203,15 +197,6 @@ class GraphRAGPipeline:
     def generate_cypher_query(self, user_query, schema_context):
         USER_PROMPT_TEMPLATE="""Generate a standard Neo4j Cypher query for the Question below.
 Use only the provided relationship types, node labels, and properties from the Schema section.
-
-Respond ONLY with the Cypher query. No explanation. No additional text.
-
-#### Examples:
-Question: "How many Python developers are there?"
-Cypher: MATCH (p:Professional {{role: 'Python developer'}}) RETURN count(p)
-
-Question: "Who has the linkedin id '123'?"
-Cypher: MATCH (p:Professional {{linkedin_id: '123'}}) RETURN p.name
 
 #### Schema:
 {schema}
