@@ -10,6 +10,7 @@ from neo4j_graphrag.schema import get_schema
 import sys
 sys.path.append('CyVer')
 from CyVer import SyntaxValidator, SchemaValidator, PropertiesValidator
+import ollama
 
 load_dotenv()
 
@@ -18,6 +19,7 @@ AUTH = ("neo4j", os.getenv("NEO4J_SECRET") )
 DB_NAME = "neo4j"
 
 HF_MODEL_ID = "neo4j/text-to-cypher-Gemma-3-4B-Instruct-2025.04.0"
+EMBED_MODEL = "mxbai-embed-large"
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
 
@@ -74,8 +76,63 @@ class GraphRAGPipeline:
         print(json.dumps(log_entry, indent=self.log_indent, default=str))
 
     def get_system_context(self):
-        """Retrieves the LIVE database state."""
-        return get_schema(self.driver, is_enhanced=False, database=DB_NAME, sanitize=False)
+        """Retrieves the LIVE database state with rich metadata and property examples."""
+        self.log("context", "Fetching rich schema from Neo4j...")
+        
+        # 1. Fetch labels and properties with examples
+        node_props = []
+        with self.driver.session(database=DB_NAME) as session:
+            labels = session.run("CALL db.labels()").value()
+            for label in labels:
+                # Get a sample node to see properties and values
+                sample_res = session.run(f"MATCH (n:{label}) RETURN n LIMIT 1").single()
+                if not sample_res:
+                    continue
+                node = sample_res[0]
+                
+                label_lines = [f"- **{label}**"]
+                for p_key, p_val in node.items():
+                    p_type = type(p_val).__name__.upper()
+                    # Sanitize example value
+                    example = str(p_val).replace("\n", " ")
+                    if len(example) > 100:
+                        example = example[:97] + "..."
+                    label_lines.append(f"  - `{p_key}`: {p_type} Example: \"{example}\"")
+                node_props.append("\n".join(label_lines))
+
+            # 2. Fetch relationships using path pattern matching
+            rel_records = session.run("""
+                MATCH (n)-[r]->(m) 
+                RETURN DISTINCT labels(n)[0] AS source, type(r) AS type, labels(m)[0] AS target 
+                LIMIT 50
+            """).data()
+            rels = [f"(:{r['source']})-[:{r['type']}]->(:{r['target']})" for r in rel_records]
+
+            # 3. Fetch Vector Indexes for context
+            vector_indexes = session.run("""
+                SHOW INDEXES YIELD name, type, labelsOrTypes 
+                WHERE type = 'VECTOR' 
+                RETURN name, labelsOrTypes[0] AS label
+            """).data()
+            v_idx_info = [f"Vector Index: `{idx['name']}` on Label `{idx['label']}`" for idx in vector_indexes]
+
+        # Assemble the final context string
+        schema_context = "Node properties:\n" + "\n".join(node_props)
+        schema_context += "\n\nThe relationships:\n" + "\n".join(rels)
+        if v_idx_info:
+            schema_context += "\n\nAvailable Vector Indexes:\n" + "\n".join(v_idx_info)
+            schema_context += "\n(Use `$embedding` parameter with `db.index.vector.queryNodes` for similarity search)"
+
+        return schema_context
+
+    def get_embedding(self, text):
+        """Generates embedding using the local Ollama instance."""
+        try:
+            res = ollama.embeddings(model=EMBED_MODEL, prompt=text)
+            return res['embedding']
+        except Exception as e:
+            self.log("Embedding Error", f"Failed to generate embedding: {str(e)}")
+            return None
 
     def generate_completion(self, messages, max_tokens=512):
         """Generic text generation helper to replace Ollama."""
@@ -100,7 +157,13 @@ class GraphRAGPipeline:
     def generate_cypher_query(self, user_query, schema_context):
         USER_PROMPT_TEMPLATE="""Generate a Cypher query for the Question below.
 Use the information about the nodes, relationships, and properties from the Schema section below to generate the best possible Cypher query.
-Return only the Cypher query as your final output, without any additional text or explanation.
+
+Respond ONLY with a JSON object in the following format:
+{{
+  "cypher": "The generated Cypher query",
+  "embed_text": "If the query uses a vector index via $embedding, provide the specific word or phrase to be vectorized here. Otherwise, null."
+}}
+
 ####Schema:
 {schema}
 ####Question:
@@ -111,19 +174,36 @@ Return only the Cypher query as your final output, without any additional text o
         ]
         res = self.generate_completion(messages)
         
-        # Robust extraction for Cypher queries inside markdown blocks
-        cypher = res
-        if "```" in res:
-            match = re.search(r"```(?:cypher)?\s*(.*?)\s*```", res, re.DOTALL)
-            if match:
-                cypher = match.group(1)
-            else:
-                cypher = re.sub(r"```cypher|```", "", res)
+        # Robust extraction for structured output
+        cypher = ""
+        embed_text = None
         
-        # Clean up literal backslash-n sequences if the model escaped them
+        try:
+            # Try to find JSON block first
+            if "{" in res and "}" in res:
+                match = re.search(r"(\{.*?\})", res, re.DOTALL)
+                if match:
+                    data = json.loads(match.group(1))
+                    cypher = data.get("cypher", "")
+                    embed_text = data.get("embed_text")
+            
+            # Fallback if the model didn't return valid JSON but returned raw Cypher
+            if not cypher:
+                cypher = res
+                if "```" in res:
+                    match = re.search(r"```(?:cypher)?\s*(.*?)\s*```", res, re.DOTALL)
+                    if match:
+                        cypher = match.group(1)
+                    else:
+                        cypher = re.sub(r"```cypher|```", "", res)
+        except Exception as e:
+            self.log("Extraction Error", f"Failed to parse model response: {str(e)}. Using raw output.")
+            cypher = res
+
+        # Clean up literal backslash-n sequences
         cypher = cypher.replace('\\n', '\n')
         
-        return cypher.strip()
+        return cypher.strip(), embed_text
 
     def execute_query(self, cypher, params=None):
         params = params or {}
@@ -141,8 +221,17 @@ Return only the Cypher query as your final output, without any additional text o
         
     def run(self, user_query):
         context = self.cached_context
-        cypher_query = self.generate_cypher_query(user_query, context)
+        cypher_query, embed_text = self.generate_cypher_query(user_query, context)
         
+        params = {}
+        if embed_text:
+            self.log("embedding", f"Generating vector for: {embed_text}")
+            vector = self.get_embedding(embed_text)
+            if vector:
+                params["embedding"] = vector
+            else:
+                self.log("embedding", "Proceeding without embedding due to generation failure.")
+
         is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME)
         if not is_valid:
             return {
@@ -151,18 +240,18 @@ Return only the Cypher query as your final output, without any additional text o
                 "final_data": [{"error": f"CyVer Syntax Error: {syntax_meta}"}]
             }
             
+        # ... rest of validation logic ...
+        # (Using minimal parameters to avoid conflicts with CyVer which sometimes validates without params)
         extracted_node_labels, extracted_rel_labels, extracted_paths = self.schema_validator.extract(cypher_query, database_name=DB_NAME)
-        self.log("Validation", f"Schema extracted nodes: {extracted_node_labels}, rels: {extracted_rel_labels}")
         schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
         if schema_score != 1:
-            return {
+             return {
                 "user_query": user_query,
                 "cypher_query": cypher_query,
                 "final_data": [{"error": f"CyVer Schema Validation Error: {schema_meta}"}]
             }
             
         variables_properties, labels_properties = self.props_validator.extract(cypher_query, strict=False, database_name=DB_NAME)
-        self.log("Validation", f"Props extracted variables: {variables_properties}, labels: {labels_properties}")
         props_score, props_meta = self.props_validator.validate(cypher_query, database_name=DB_NAME, strict=False)
         if props_score is not None and props_score != 1:
             return {
@@ -171,7 +260,7 @@ Return only the Cypher query as your final output, without any additional text o
                 "final_data": [{"error": f"CyVer Properties Validation Error: {props_meta}"}]
             }
             
-        final_data = self.execute_query(cypher_query, {})
+        final_data = self.execute_query(cypher_query, params)
         return {
             "user_query": user_query,
             "cypher_query": cypher_query,
