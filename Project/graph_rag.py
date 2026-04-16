@@ -67,6 +67,25 @@ class GraphRAGPipeline:
                 low_cpu_mem_usage=True
             ).to(self.device)
 
+        # Seed examples for Dynamic Few-Shot Prompting
+        self.few_shot_data = [
+            {
+                "question": "Find people with experience in React",
+                "cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 10, $embedding) YIELD node AS exp, score MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN p.name, score"
+            },
+            {
+                "question": "How many Python developers are there?",
+                "cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN count(DISTINCT p)"
+            },
+            {
+                "question": "Who works at Google?",
+                "cypher": "MATCH (p:Professional)-[:WORKS_AT]->(c:Company {name: 'Google'}) RETURN p.name"
+            }
+        ]
+        self.log("init", "Pre-embedding few-shot examples...")
+        for ex in self.few_shot_data:
+            ex["embedding"] = self.get_embedding(ex["question"])
+
     def log(self, stage, message, data=None):
         log_entry = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -156,7 +175,36 @@ class GraphRAGPipeline:
         response_text = self.tokenizer.decode(outputs[0][input_len:], skip_special_tokens=True)
         return response_text.strip()
 
+    def get_relevant_examples(self, user_query, k=2):
+        """Retrieves the most semantically relevant Cypher examples."""
+        query_vec = self.get_embedding(user_query)
+        if not query_vec:
+            return ""
+        
+        def cosine_sim(v1, v2):
+            if not v1 or not v2: return 0
+            dot = sum(a * b for a, b in zip(v1, v2))
+            mag1 = sum(a * a for a in v1) ** 0.5
+            mag2 = sum(b * b for b in v2) ** 0.5
+            return dot / (mag1 * mag2) if (mag1 * mag2) > 0 else 0
+
+        scored_examples = []
+        for ex in self.few_shot_data:
+            score = cosine_sim(query_vec, ex["embedding"])
+            scored_examples.append((score, ex))
+        
+        # Sort by score and take top k
+        scored_examples.sort(key=lambda x: x[0], reverse=True)
+        top_examples = scored_examples[:k]
+        
+        example_str = ""
+        for score, ex in top_examples:
+            example_str += f"Question: \"{ex['question']}\"\nCypher: {ex['cypher']}\n\n"
+        return example_str.strip()
+
     def generate_cypher_query(self, user_query, schema_context):
+        examples = self.get_relevant_examples(user_query)
+        
         USER_PROMPT_TEMPLATE="""Generate a Cypher query for the Question below.
 Use the information about the nodes, relationships, and properties from the Schema section below to generate the best possible Cypher query.
 
@@ -165,19 +213,16 @@ Respond ONLY with the Cypher query. No explanation. No JSON. No additional text.
 #### Guidelines:
 1. For statistical or counting questions (e.g., 'how many developers'), prioritize vector similarity search using a high k-value (100000) and a score threshold (e.g. score > 0.8).
 2. Use the `$embedding` parameter for similarity searches.
+3. If using `db.index.vector.queryNodes`, always yield `node` and `score`.
 
-#### Examples:
-Question: "How many developer are there?"
-Cypher: CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN count(DISTINCT p) AS numberOfDevs
+#### Relevant Examples:
+{examples}
 
-Question: "Who has the linkedin id '123'?"
-Cypher: MATCH (p:Professional {{linkedin_id: '123'}}) RETURN p.name
-
-####Schema:
+#### Schema:
 {schema}
-####Question:
+#### Question:
 {question}"""
-        prompt = USER_PROMPT_TEMPLATE.format(schema=schema_context, question=user_query)
+        prompt = USER_PROMPT_TEMPLATE.format(schema=schema_context, question=user_query, examples=examples)
         messages = [
             {"role": "user", "content": prompt}
         ]
