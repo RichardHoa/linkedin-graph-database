@@ -197,7 +197,7 @@ Respond ONLY with the Cypher query. No explanation. No additional text.
 
 #### Examples:
 Question: "How many Python developers are there?"
-Cypher: MATCH (p:Professional {role: 'Python developer'}) RETURN count(p)
+Cypher: MATCH (p:Professional {{role: 'Python developer'}}) RETURN count(p)
 
 Question: "Who has the linkedin id '123'?"
 Cypher: MATCH (p:Professional {{linkedin_id: '123'}}) RETURN p.name
