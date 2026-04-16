@@ -119,6 +119,9 @@ Return only the Cypher query as your final output, without any additional text o
             else:
                 cypher = re.sub(r"```cypher|```", "", res)
         
+        # Clean up literal backslash-n sequences if the model escaped them
+        cypher = cypher.replace('\\n', '\n')
+        
         return cypher.strip()
 
     def execute_query(self, cypher, params=None):
