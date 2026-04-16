@@ -30,6 +30,7 @@ class GraphRAGPipeline:
         
         self.log("init", "Initializing System Context...")
         self.cached_context = self.get_system_context()
+        self.log("system context", self.cached_context)
         
         self.syntax_validator = SyntaxValidator(self.driver, check_multilabeled_nodes=False)
         self.schema_validator = SchemaValidator(self.driver)
