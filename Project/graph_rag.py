@@ -215,6 +215,9 @@ class GraphRAGPipeline:
             return standard_cypher, None
 
         # 6. Reconstruct the query
+        search_node_label = node_labels.get(search_node_var)
+        search_node_with_label = f"({search_node_var}:{search_node_label})" if search_node_label else f"({search_node_var})"
+        
         # Split the pattern around the search node variable.
         search_node_regex = rf"\({search_node_var}(?::\w+)?\)"
         search_node_match = re.search(search_node_regex, full_pattern)
@@ -224,17 +227,33 @@ class GraphRAGPipeline:
             
         start_pos, end_pos = search_node_match.span()
         
-        prefix_pattern = full_pattern[:end_pos].strip()
-        suffix_pattern = full_pattern[start_pos:].strip()
+        # Construct traversal parts (removing labels for subsequent matches)
+        prefix_traversal = full_pattern[:start_pos].strip() + f"({search_node_var})"
+        suffix_traversal = f"({search_node_var})" + full_pattern[end_pos:].strip()
+        
+        traversal_matches = []
+        if len(prefix_traversal) > len(f"({search_node_var})"):
+            traversal_matches.append(f"MATCH {prefix_traversal}")
+        if len(suffix_traversal) > len(f"({search_node_var})"):
+            traversal_matches.append(f"MATCH {suffix_traversal}")
+            
+        traversal_section = ""
+        if traversal_matches:
+            traversal_section = "// 3. Now traverse the graph for the matching nodes\n" + "\n".join(traversal_matches) + "\n\n"
         
         # Extract the RETURN part
         return_match = re.search(r"RETURN\s+.*", standard_cypher, re.IGNORECASE | re.DOTALL)
         return_part = return_match.group(0) if return_match else ""
         
         transformed_cypher = (
-            f"MATCH {prefix_pattern}\n"
-            f"SEARCH {search_node_var} IN (VECTOR INDEX {search_index} FOR $emb_role LIMIT 100000 WHERE score > 0.8)\n"
-            f"MATCH {suffix_pattern}\n"
+            f"CYPHER 25\n"
+            f"// 1. Bind ONLY the node being searched\n"
+            f"MATCH {search_node_with_label}\n\n"
+            f"// 2. Perform the vector search\n"
+            f"SEARCH {search_node_var} IN (VECTOR INDEX {search_index} FOR $emb_role LIMIT 100000)\n"
+            f"SCORE AS score\n"
+            f"WHERE score > 0.8\n\n"
+            f"{traversal_section}"
             f"{return_part}"
         )
         
