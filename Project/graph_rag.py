@@ -156,39 +156,48 @@ class GraphRAGPipeline:
         response_text = self.tokenizer.decode(outputs[0][input_len:], skip_special_tokens=True)
         return response_text.strip()
 
-    def expand_macros(self, cypher):
-        """Expands custom macros into valid Neo4j 5.x Cypher syntax."""
-        semantic_term = None
+    def transform_to_vector_query(self, standard_cypher):
+        """Uses Qwen 14B to transform standard Cypher into a vector search query."""
+        self.log("transformation", f"Sending query to Qwen 14B for semantic transformation...")
         
-        # Regex to find MATCH_SEMANTIC("term")
-        match = re.search(r'MATCH_SEMANTIC\("(.*?)"\)', cypher)
-        if match:
-            semantic_term = match.group(1)
-            # Expand to full Neo4j 5.x vector boilerplate
-            # Note: We use 'node' as the yield variable to maintain compatibility with downstream matches
-            replacement = (
-                f"CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) "
-                f"YIELD node, score WHERE score > 0.8"
-            )
-            cypher = cypher.replace(match.group(0), replacement)
-            
-        return cypher, semantic_term
+        prompt = f"""You are a Cypher translation expert. Convert the following standard Cypher query into a Neo4j 5.x vector search query.
+        
+        ### Standard Cypher: 
+        {standard_cypher}
+        
+        ### Rules:
+        1. Target Vector Index: 'experience_embeddings'
+        2. Boilerplate: CALL db.index.vector.queryNodes('experience_embeddings', 100000, $embedding) YIELD node, score WHERE score > 0.8
+        3. Use the variable 'node' as the semantic anchor for subsequent MATCH clauses.
+        4. Extract the core role or skill being filtered in the original query as the 'embedding_term'.
+        
+        Respond ONLY with a JSON object:
+        {{
+            "transformed_cypher": "...",
+            "embedding_term": "..."
+        }}
+        """
+        
+        try:
+            res = ollama.generate(model="qwen2.5-coder:14b", prompt=prompt, format="json", stream=False)
+            data = json.loads(res['response'])
+            transformed = data.get("transformed_cypher", standard_cypher)
+            term = data.get("embedding_term", "")
+            self.log("transformation", f"Transformed to Vector Cypher. Term: {term}")
+            return transformed, term
+        except Exception as e:
+            self.log("Transformation Error", f"Fallback to standard Cypher: {str(e)}")
+            return standard_cypher, None
 
     def generate_cypher_query(self, user_query, schema_context):
-        USER_PROMPT_TEMPLATE="""Generate a Cypher query for the Question below.
-Use the information about the nodes, relationships, and properties from the Schema section below.
+        USER_PROMPT_TEMPLATE="""Generate a standard Neo4j Cypher query for the Question below.
+Use only the provided relationship types, node labels, and properties from the Schema section.
 
 Respond ONLY with the Cypher query. No explanation. No additional text.
 
-#### Instructions for Semantic Search:
-If the user asks for a professional role, skill, or subject-based search (e.g. 'developers', 'experts in React'), you MUST use the following macro at the START of your query:
-`MATCH_SEMANTIC("term")`
-Where "term" is the formal singular role or skill.
-Follow this macro with standard MATCH patterns using the variable `node`.
-
 #### Examples:
 Question: "How many Python developers are there?"
-Cypher: MATCH_SEMANTIC("Python developer") MATCH (p:Professional)-[:HAS_EXPERIENCE]->(node) RETURN count(DISTINCT p)
+Cypher: MATCH (p:Professional {role: 'Python developer'}) RETURN count(p)
 
 Question: "Who has the linkedin id '123'?"
 Cypher: MATCH (p:Professional {{linkedin_id: '123'}}) RETURN p.name
@@ -255,12 +264,18 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
         context = self.cached_context
         max_retries = 3
         
-        # Generate Cypher (raw text, no JSON)
-        cypher_query = self.generate_cypher_query(user_query, context)
-        
-        # Step 3: Self-correction loop for syntax errors
+        # Stage 1: Generate Standard Cypher using Gemma 3
+        self.log("generation", f"Stage 1: Generating standard Cypher intent...")
+        standard_cypher = self.generate_cypher_query(user_query, context)
+        self.log("generation", f"Gemma Output: {standard_cypher}")
+
+        # Stage 2: Transform to Vector Search Query using Qwen 14B
+        # We only transform if the user is asking for roles/skills (heuristic or always check)
+        cypher_query, semantic_term = self.transform_to_vector_query(standard_cypher)
+
+        # Stage 3: Self-correction loop for syntax errors
         for attempt in range(max_retries):
-            self.log("Validation", f"Attempt {attempt + 1}: Validating Cypher...")
+            self.log("Validation", f"Attempt {attempt + 1}: Validating Transformation...")
             is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME)
             
             if is_valid:
@@ -276,11 +291,9 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
                     "final_data": [{"error": f"CyVer Syntax Error after {max_retries} attempts: {syntax_meta}"}]
                 }
 
-        # Step 4: Macro expansion and parameter injection
-        cypher_query, semantic_term = self.expand_macros(cypher_query)
-        
+        # Stage 4: Inject embedding parameter if needed
         params = {}
-        if semantic_term:
+        if semantic_term and "$embedding" in cypher_query:
             self.log("embedding", f"Generating vector for semantic term: {semantic_term}")
             vector = self.get_embedding(semantic_term)
             if vector:
@@ -288,7 +301,6 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
             else:
                 self.log("embedding", "Proceeding without embedding due to generation failure.")
         elif "$embedding" in cypher_query:
-            # Fallback to full query if model used $embedding without macro (though forbidden)
             self.log("embedding", f"Fallback: Generating vector for query: {user_query}")
             vector = self.get_embedding(user_query)
             if vector: params["embedding"] = vector
