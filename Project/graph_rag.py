@@ -173,11 +173,20 @@ class GraphRAGPipeline:
         5. Extraction: Extract the specific role/skill to embed as 'embedding_term'.
         6. Clean Up: Remove standard property filters (like {{role: '...'}}) that are now handled by the semantic search.
         
-        Respond ONLY with a JSON object:
-        {{
-            "transformed_cypher": "...",
-            "embedding_term": "..."
+        ### Examples:
+        Standard Cypher: MATCH (p:Professional {{role: 'Python developer'}}) RETURN count(p)
+        Response: {{
+            "transformed_cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN count(DISTINCT p)",
+            "embedding_term": "Python developer"
         }}
+
+        Standard Cypher: MATCH (p:Professional) WHERE p.role = 'Software engineer' RETURN p.name
+        Response: {{
+            "transformed_cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN p.name",
+            "embedding_term": "Software engineer"
+        }}
+
+        Respond ONLY with a JSON object.
         """
         
         try:
@@ -276,22 +285,32 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
         cypher_query, semantic_term = self.transform_to_vector_query(standard_cypher)
 
         # Stage 3: Self-correction loop for syntax errors
+        # Use a dummy parameter to avoid "Missing parameters" errors during EXPLAIN validation
+        dummy_params = {"emb_role": [0.0] * 1024} 
+        
+        valid_vector_cypher = False
         for attempt in range(max_retries):
             self.log("Validation", f"Attempt {attempt + 1}: Validating Transformation...")
-            is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME)
+            is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME, params=dummy_params)
             
+            # If the error is ONLY about missing parameters, it's actually syntactically valid for our purposes
+            if not is_valid and any("Missing parameters" in str(err) for err in (syntax_meta if isinstance(syntax_meta, list) else [syntax_meta])):
+                 self.log("Validation", "Query is valid (ignoring missing parameter warnings during validation).")
+                 is_valid = True
+
             if is_valid:
+                valid_vector_cypher = True
                 break
             
             if attempt < max_retries - 1:
                 self.log("Correction", f"Syntax error detected: {syntax_meta}. Retrying...")
                 cypher_query = self.fix_cypher_syntax(cypher_query, str(syntax_meta), context)
-            else:
-                return {
-                    "user_query": user_query,
-                    "cypher_query": cypher_query,
-                    "final_data": [{"error": f"CyVer Syntax Error after {max_retries} attempts: {syntax_meta}"}]
-                }
+        
+        # Fallback Logic: If Vector Cypher is invalid after retries, revert to Standard Cypher
+        if not valid_vector_cypher:
+            self.log("Fallback", "Vector Transformation failed validation. Falling back to Standard Cypher.")
+            cypher_query = standard_cypher
+            semantic_term = None  # Disable embedding injection
 
         # Stage 4: Inject embedding parameter if needed
         params = {}
@@ -308,13 +327,16 @@ Please fix the syntax error and return ONLY the corrected Cypher query. No expla
             if vector: params["emb_role"] = vector
 
         # Step 5: Final validation and execution
-        schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
-        if schema_score != 1:
-             self.log("Schema Warning", f"Schema validation score: {schema_score}. Meta: {schema_meta}")
-            
-        props_score, props_meta = self.props_validator.validate(cypher_query, database_name=DB_NAME, strict=False)
-        if props_score is not None and props_score != 1:
-            self.log("Props Warning", f"Props validation score: {props_score}. Meta: {props_meta}")
+        try:
+            schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
+            if schema_score != 1:
+                 self.log("Schema Warning", f"Schema validation score: {schema_score}. Meta: {schema_meta}")
+                
+            props_score, props_meta = self.props_validator.validate(cypher_query, database_name=DB_NAME, strict=False)
+            if props_score is not None and props_score != 1:
+                self.log("Props Warning", f"Props validation score: {props_score}. Meta: {props_meta}")
+        except Exception as e:
+            self.log("Validation Cleanup", f"Validation skipped or failed gracefully: {str(e)}")
             
         final_data = self.execute_query(cypher_query, params)
         return {
