@@ -160,14 +160,18 @@ class GraphRAGPipeline:
         """Purely static transformation of Cypher to Vector SEARCH syntax."""
         self.log("transformation", "Applying static semantic transformation logic...")
 
-        # 1. Extract WHERE clause details: var.prop = 'value'
-        # Matches: WHERE var.prop = "value" or WHERE var.prop = 'value'
-        where_pattern = r"WHERE\s+(\w+)\.(\w+)\s*=\s*(['\"])(.*?)\3"
+        # 1. Extract WHERE clause details
+        # Supports: 
+        # - WHERE var.prop = "val"
+        # - WHERE toLower(var.prop) CONTAINS "val"
+        # - WHERE var.prop CONTAINS "val"
+        where_pattern = r"WHERE\s+(?:toLower\()?\s*(\w+)\.(\w+)\s*\)?\s*(?:=|(?:CONTAINS))\s*(['\"])(.*?)\3"
         where_match = re.search(where_pattern, standard_cypher, re.IGNORECASE)
         if not where_match:
             return standard_cypher, None
 
         var_name, prop_name, _, search_term = where_match.groups()
+
 
         # 2. Extract the MATCH pattern
         match_pattern_regex = r"MATCH\s+(.*?)(?:\s+WHERE|\s+RETURN|$)"
