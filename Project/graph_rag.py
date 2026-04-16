@@ -157,42 +157,86 @@ class GraphRAGPipeline:
         return response_text.strip()
 
     def transform_to_vector_query(self, standard_cypher):
-        """Uses Qwen 14B to transform standard Cypher into a vector search query."""
-        self.log("transformation", f"Sending query to Qwen 14B for semantic transformation...")
-        
-        prompt = f"""You are a Cypher translation expert. Convert the following standard Cypher query into a Neo4j 5.x vector search query.
-        
-        ### Standard Cypher: 
-        {standard_cypher}
-        
-        ### Rules:
-        1. Target Vector Index: 'experience_embeddings'
-        2. Parameter Name: Use '$emb_role' for the embedding vector.
-        3. Boilerplate: CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score WHERE score > 0.8
-        4. Matching Pattern: Use `MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp)` to link professionals to the semantic experience nodes.
-        5. Extraction: Extract the specific role/skill to embed as 'embedding_term'.
-        6. Clean Up: Remove standard property filters (like {{role: '...'}}) that are now handled by the semantic search.
-        
-        ### Examples:
-        Standard Cypher: MATCH (p:Professional {{role: 'Python developer'}}) RETURN count(p)
-        Response: {{
-            "transformed_cypher": "CALL db.index.vector.queryNodes('experience_embeddings', 100000, $emb_role) YIELD node AS exp, score WHERE score > 0.8 MATCH (p:Professional)-[:HAS_EXPERIENCE]->(exp) RETURN count(DISTINCT p)",
-            "embedding_term": "Python developer"
-        }}
+        """Purely static transformation of Cypher to Vector SEARCH syntax."""
+        self.log("transformation", "Applying static semantic transformation logic...")
 
-        Respond ONLY with a JSON object.
-        """
-        
-        try:
-            res = ollama.generate(model="qwen2.5-coder:14b", prompt=prompt, format="json", stream=False)
-            data = json.loads(res['response'])
-            transformed = data.get("transformed_cypher", standard_cypher)
-            term = data.get("embedding_term", "")
-            self.log("transformation", f"Transformed to Vector Cypher. Term: {term}")
-            return transformed, term
-        except Exception as e:
-            self.log("Transformation Error", f"Fallback to standard Cypher: {str(e)}")
+        # 1. Extract WHERE clause details: var.prop = 'value'
+        # Matches: WHERE var.prop = "value" or WHERE var.prop = 'value'
+        where_pattern = r"WHERE\s+(\w+)\.(\w+)\s*=\s*(['\"])(.*?)\3"
+        where_match = re.search(where_pattern, standard_cypher, re.IGNORECASE)
+        if not where_match:
             return standard_cypher, None
+
+        var_name, prop_name, _, search_term = where_match.groups()
+
+        # 2. Extract the MATCH pattern
+        match_pattern_regex = r"MATCH\s+(.*?)(?:\s+WHERE|\s+RETURN|$)"
+        match_match = re.search(match_pattern_regex, standard_cypher, re.IGNORECASE | re.DOTALL)
+        if not match_match:
+            return standard_cypher, None
+
+        full_pattern = match_match.group(1).strip()
+
+        # 3. Map Labels to Indexes
+        index_map = {
+            "Professional": "professional_embeddings",
+            "Experience": "experience_embeddings",
+            "Education": "education_embeddings",
+            "Certification": "certification_embeddings"
+        }
+
+        # 4. Parse nodes in the pattern: (var:Label)
+        nodes = re.findall(r"\((\w+)(?::(\w+))?\)", full_pattern)
+        node_vars = [n[0] for n in nodes]
+        node_labels = {n[0]: n[1] for n in nodes}
+
+        if var_name not in node_vars:
+            return standard_cypher, None
+
+        target_idx = node_vars.index(var_name)
+
+        # 5. "Move Up" logic: Find the best index candidate
+        search_node_var = None
+        search_index = None
+
+        for i in range(target_idx, -1, -1):
+            v = node_vars[i]
+            label = node_labels.get(v)
+            if label in index_map:
+                search_node_var = v
+                search_index = index_map[label]
+                break
+
+        if not search_index:
+            return standard_cypher, None
+
+        # 6. Reconstruct the query
+        # Split the pattern around the search node variable.
+        search_node_regex = rf"\({search_node_var}(?::\w+)?\)"
+        search_node_match = re.search(search_node_regex, full_pattern)
+        
+        if not search_node_match:
+            return standard_cypher, None
+            
+        start_pos, end_pos = search_node_match.span()
+        
+        prefix_pattern = full_pattern[:end_pos].strip()
+        suffix_pattern = full_pattern[start_pos:].strip()
+        
+        # Extract the RETURN part
+        return_match = re.search(r"RETURN\s+.*", standard_cypher, re.IGNORECASE | re.DOTALL)
+        return_part = return_match.group(0) if return_match else ""
+        
+        transformed_cypher = (
+            f"MATCH {prefix_pattern}\n"
+            f"SEARCH {search_node_var} IN (VECTOR INDEX {search_index} FOR $emb_role LIMIT 100000 WHERE score > 0.8)\n"
+            f"MATCH {suffix_pattern}\n"
+            f"{return_part}"
+        )
+        
+        self.log("transformation", f"Transformed to Vector Cypher. SEARCH Node: {search_node_var}, Index: {search_index}")
+        return transformed_cypher, search_term
+
 
     def generate_cypher_query(self, user_query, schema_context):
         USER_PROMPT_TEMPLATE="""Generate a standard Neo4j Cypher query for the Question below.
