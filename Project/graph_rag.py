@@ -11,6 +11,7 @@ import sys
 sys.path.append('CyVer')
 from CyVer import SyntaxValidator, SchemaValidator, PropertiesValidator
 import ollama
+import json_repair
 
 load_dotenv()
 
@@ -193,21 +194,30 @@ Response:
             {"role": "user", "content": prompt}
         ]
         res = self.generate_completion(messages)
-        
-        # Robust extraction for structured output
+        return self.extract_cypher_and_embed(res)
+
+    def extract_cypher_and_embed(self, res):
+        """Extracts structured data from model response using json_repair."""
         cypher = ""
         embed_text = None
         
         try:
-            # Try to find JSON block first
-            if "{" in res and "}" in res:
+            # Use json_repair to handle partially malformed JSON
+            repair_res = json_repair.repair_json(res, return_objects=True)
+            if isinstance(repair_res, dict):
+                cypher = repair_res.get("cypher", "")
+                embed_text = repair_res.get("embed_text")
+            
+            # If json_repair didn't get a dict, try regex as a deep fallback
+            if not cypher:
                 match = re.search(r"(\{.*?\})", res, re.DOTALL)
                 if match:
-                    data = json.loads(match.group(1))
-                    cypher = data.get("cypher", "")
-                    embed_text = data.get("embed_text")
+                    data = json_repair.repair_json(match.group(1), return_objects=True)
+                    if isinstance(data, dict):
+                        cypher = data.get("cypher", "")
+                        embed_text = data.get("embed_text")
             
-            # Fallback if the model didn't return valid JSON but returned raw Cypher
+            # Final fallback to raw string if still empty
             if not cypher:
                 cypher = res
                 if "```" in res:
@@ -225,6 +235,26 @@ Response:
         
         return cypher.strip(), embed_text
 
+    def fix_cypher_syntax(self, bad_cypher, error_msg, schema_context):
+        """Asks the model to fix a syntactically incorrect Cypher query."""
+        self.log("Correction", f"Sending error feedback to LLM...")
+        prompt = f"""The following Cypher query generated for the database schema below is syntactically INCORRECT.
+#### Schema:
+{schema_context}
+
+#### Faulty Query:
+{bad_cypher}
+
+#### Error Message:
+{error_msg}
+
+Please fix the syntax error and return a VALID JSON object with the "cypher" and "embed_text" fields as described previously.
+Ensure the Cypher query is compatible with Neo4j and matches the schema exactly."""
+        
+        messages = [{"role": "user", "content": prompt}]
+        res = self.generate_completion(messages)
+        return self.extract_cypher_and_embed(res)
+
     def execute_query(self, cypher, params=None):
         params = params or {}
         with self.driver.session(database=DB_NAME) as session:
@@ -241,8 +271,27 @@ Response:
         
     def run(self, user_query):
         context = self.cached_context
+        max_retries = 3
+        
         cypher_query, embed_text = self.generate_cypher_query(user_query, context)
         
+        for attempt in range(max_retries):
+            self.log("Validation", f"Attempt {attempt + 1}: Validating Cypher...")
+            is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME)
+            
+            if is_valid:
+                break
+            
+            if attempt < max_retries - 1:
+                self.log("Correction", f"Syntax error detected: {syntax_meta}. Retrying...")
+                cypher_query, embed_text = self.fix_cypher_syntax(cypher_query, str(syntax_meta), context)
+            else:
+                return {
+                    "user_query": user_query,
+                    "cypher_query": cypher_query,
+                    "final_data": [{"error": f"CyVer Syntax Error after {max_retries} attempts: {syntax_meta}"}]
+                }
+
         params = {}
         if embed_text:
             self.log("embedding", f"Generating vector for: {embed_text}")
@@ -252,16 +301,7 @@ Response:
             else:
                 self.log("embedding", "Proceeding without embedding due to generation failure.")
 
-        is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME)
-        if not is_valid:
-            return {
-                "user_query": user_query,
-                "cypher_query": cypher_query,
-                "final_data": [{"error": f"CyVer Syntax Error: {syntax_meta}"}]
-            }
-            
-        # ... rest of validation logic ...
-        # (Using minimal parameters to avoid conflicts with CyVer which sometimes validates without params)
+        # Continue with schema and property validation (one-shot for now, assuming syntax correction also helps schema)
         extracted_node_labels, extracted_rel_labels, extracted_paths = self.schema_validator.extract(cypher_query, database_name=DB_NAME)
         schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
         if schema_score != 1:
