@@ -11,6 +11,7 @@ sys.path.append('CyVer')
 from CyVer import SyntaxValidator, SchemaValidator, PropertiesValidator
 import ollama
 import json_repair
+import requests
 
 load_dotenv()
 
@@ -38,6 +39,14 @@ class GraphRAGPipeline:
         self.syntax_validator = SyntaxValidator(self.driver, check_multilabeled_nodes=False)
         self.schema_validator = SchemaValidator(self.driver)
         self.props_validator = PropertiesValidator(self.driver)
+
+        # API Configuration
+        self.api_key = os.getenv("API_KEY")
+        self.api_url = "https://apollo.quocanmeomeo.io.vn/v1/chat/completions"
+        self.api_headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
 
     def log(self, stage, message, data=None):
         log_entry = {
@@ -118,108 +127,65 @@ class GraphRAGPipeline:
             return ""
 
     def transform_to_vector_query(self, standard_cypher):
-        """Purely static transformation of Cypher to Vector SEARCH syntax."""
-        self.log("transformation", "Applying static semantic transformation logic...")
+        """Transform standard Cypher to Cypher 25 Vector Search using external API."""
+        self.log("transformation", "Applying AI semantic transformation...")
 
-        # 1. Extract WHERE clause details
-        # Supports: 
-        # - WHERE var.prop = "val"
-        # - WHERE toLower(var.prop) CONTAINS "val"
-        # - WHERE var.prop CONTAINS "val"
+        # 1. Extract search term from original query for embedding purposes
         where_pattern = r"WHERE\s+(?:toLower\()?\s*(\w+)\.(\w+)\s*\)?\s*(?:=|(?:CONTAINS))\s*(['\"])(.*?)\3"
         where_match = re.search(where_pattern, standard_cypher, re.IGNORECASE)
-        if not where_match:
+        search_term = where_match.group(4) if where_match else None
+
+        # 2. Prepare API call
+        messages = [
+            {
+                "role": "system",
+                "content": "You are a Cypher expert for Neo4j v2026. Transform legacy Cypher queries into Cypher 25 using the SEARCH sub-clause. Available vector indexes: Professional (professional_embeddings), Experience (experience_embeddings), Education (education_embeddings), Certification (certification_embeddings). Return ONLY the Cypher query and nothing else."
+            },
+            {
+                "role": "user",
+                "content": "Transform: MATCH (e:Experience)-[:ROLE_WAS]->(j:JobTitle {name: \"digital designer\"}) WHERE NOT EXISTS { MATCH (e)-[:HAS_EDUCATION]->(edu:Education)-[:AT_UNIVERSITY]->(u:University) RETURN edu } RETURN count(DISTINCT e) AS count"
+            },
+            {
+                "role": "assistant",
+                "content": "CYPHER 25\nMATCH (j:JobTitle)\nSEARCH j IN (VECTOR INDEX experience_embeddings FOR $emb_role LIMIT 100)\nSCORE AS score\nWHERE score > 0.8\nMATCH (e:Experience)-[:ROLE_WAS]->(j)\nWHERE NOT EXISTS {\n    MATCH (e)-[:HAS_EDUCATION]->(:Education)-[:AT_UNIVERSITY]->(:University)\n}\nRETURN count(DISTINCT e) AS count"
+            },
+            {
+                "role": "user",
+                "content": "Transform: MATCH (p:Professional)-[:HAS_EXPERIENCE]->(e:Experience)-[:ROLE_WAS]->(jt:JobTitle) WHERE jt.name = \"developer\" RETURN count(DISTINCT p)"
+            },
+            {
+                "role": "assistant",
+                "content": "CYPHER 25\nMATCH (jt:JobTitle)\nSEARCH jt IN (VECTOR INDEX experience_embeddings FOR $emb_role LIMIT 100)\nSCORE AS score\nWHERE score > 0.8\nMATCH (p:Professional)-[:HAS_EXPERIENCE]->(e:Experience)-[:ROLE_WAS]->(jt)\nRETURN count(DISTINCT p)"
+            },
+            {
+                "role": "user",
+                "content": "Transform: MATCH (p:Professional) WHERE p.headline CONTAINS \"Data Scientist\" RETURN p.name LIMIT 10"
+            },
+            {
+                "role": "assistant",
+                "content": "CYPHER 25\nMATCH (p:Professional)\nSEARCH p IN (VECTOR INDEX professional_embeddings FOR $emb_role LIMIT 100)\nSCORE AS score\nWHERE score > 0.8\nRETURN p.name LIMIT 10"
+            },
+            {
+                "role": "user",
+                "content": f"Transform: {standard_cypher}"
+            }
+        ]
+
+        try:
+            data = {
+                "model": "qwen2.5-coder:14b",
+                "messages": messages,
+                "stream": False
+            }
+            response = requests.post(self.api_url, headers=self.api_headers, json=data, timeout=30)
+            response.raise_for_status()
+            result = response.json()
+            transformed_cypher = self.extract_cypher_only(result['choices'][0]['message']['content'])
+            self.log("transformation", "AI Transformation successful.")
+            return transformed_cypher, search_term
+        except Exception as e:
+            self.log("transformation error", f"AI Transformation failed: {str(e)}")
             return standard_cypher, None
-
-        var_name, prop_name, _, search_term = where_match.groups()
-
-
-        # 2. Extract the MATCH pattern
-        match_pattern_regex = r"MATCH\s+(.*?)(?:\s+WHERE|\s+RETURN|$)"
-        match_match = re.search(match_pattern_regex, standard_cypher, re.IGNORECASE | re.DOTALL)
-        if not match_match:
-            return standard_cypher, None
-
-        full_pattern = match_match.group(1).strip()
-
-        # 3. Map Labels to Indexes
-        index_map = {
-            "Professional": "professional_embeddings",
-            "Experience": "experience_embeddings",
-            "Education": "education_embeddings",
-            "Certification": "certification_embeddings"
-        }
-
-        # 4. Parse nodes in the pattern: (var:Label)
-        nodes = re.findall(r"\((\w+)(?::(\w+))?\)", full_pattern)
-        node_vars = [n[0] for n in nodes]
-        node_labels = {n[0]: n[1] for n in nodes}
-
-        if var_name not in node_vars:
-            return standard_cypher, None
-
-        target_idx = node_vars.index(var_name)
-
-        # 5. "Move Up" logic: Find the best index candidate
-        search_node_var = None
-        search_index = None
-
-        for i in range(target_idx, -1, -1):
-            v = node_vars[i]
-            label = node_labels.get(v)
-            if label in index_map:
-                search_node_var = v
-                search_index = index_map[label]
-                break
-
-        if not search_index:
-            return standard_cypher, None
-
-        # 6. Reconstruct the query
-        search_node_label = node_labels.get(search_node_var)
-        search_node_with_label = f"({search_node_var}:{search_node_label})" if search_node_label else f"({search_node_var})"
-        
-        # Split the pattern around the search node variable.
-        search_node_regex = rf"\({search_node_var}(?::\w+)?\)"
-        search_node_match = re.search(search_node_regex, full_pattern)
-        
-        if not search_node_match:
-            return standard_cypher, None
-            
-        start_pos, end_pos = search_node_match.span()
-        
-        # Construct traversal parts (removing labels for subsequent matches)
-        prefix_traversal = full_pattern[:start_pos].strip() + f"({search_node_var})"
-        suffix_traversal = f"({search_node_var})" + full_pattern[end_pos:].strip()
-        
-        traversal_matches = []
-        if len(prefix_traversal) > len(f"({search_node_var})"):
-            traversal_matches.append(f"MATCH {prefix_traversal}")
-        if len(suffix_traversal) > len(f"({search_node_var})"):
-            traversal_matches.append(f"MATCH {suffix_traversal}")
-            
-        traversal_section = ""
-        if traversal_matches:
-            traversal_section = "// 3. Now traverse the graph for the matching nodes\n" + "\n".join(traversal_matches) + "\n\n"
-        
-        # Extract the RETURN part
-        return_match = re.search(r"RETURN\s+.*", standard_cypher, re.IGNORECASE | re.DOTALL)
-        return_part = return_match.group(0) if return_match else ""
-        
-        transformed_cypher = (
-            f"CYPHER 25\n"
-            f"// 1. Bind ONLY the node being searched\n"
-            f"MATCH {search_node_with_label}\n\n"
-            f"// 2. Perform the vector search\n"
-            f"SEARCH {search_node_var} IN (VECTOR INDEX {search_index} FOR $emb_role LIMIT 100000)\n"
-            f"SCORE AS score\n"
-            f"WHERE score > 0.8\n\n"
-            f"{traversal_section}"
-            f"{return_part}"
-        )
-        
-        self.log("transformation", f"Transformed to Vector Cypher. SEARCH Node: {search_node_var}, Index: {search_index}")
-        return transformed_cypher, search_term
 
 
     def generate_cypher_query(self, user_query, schema_context):
@@ -251,38 +217,6 @@ Use only the provided relationship types, node labels, and properties from the S
         cypher = cypher.replace('\\n', '\n')
         return cypher.strip()
 
-    def fix_cypher_syntax(self, bad_cypher, error_msg, schema_context):
-        """Asks the model to fix a syntactically incorrect Cypher query using Qwen2.5-Coder."""
-        self.log("Correction", f"Sending error feedback to Ollama (qwen2.5-coder:14b)...")
-        prompt = f"""You are a Neo4j Cypher expert. The query below is INVALID.
-Fix it while strictly adhering to the database schema and the latest Cypher 25 syntax.
-
-### DATABASE SCHEMA:
-{schema_context}
-
-### ERROR MESSAGE:
-{error_msg}
-
-### SUBMITTED FAULTY QUERY:
-```cypher
-{bad_cypher}
-```
-
-### CRITICAL INSTRUCTIONS:
-1. If this is a Vector Search query, ensure it uses `CYPHER 25` and follows the multi-stage MATCH -> SEARCH -> MATCH pattern if applicable.
-2. Ensure all relationship types and labels match the schema EXACTLY.
-3. Fix any misspelled properties or misaligned patterns.
-4. Return ONLY the corrected Cypher query inside a markdown code block.
-5. DO NOT provide any explanation, preamble, or conversational filler."""
-        
-        messages = [{"role": "user", "content": prompt}]
-        try:
-            res = ollama.chat(model="qwen2.5-coder:14b", messages=messages)
-            corrected_cypher = res['message']['content']
-            return self.extract_cypher_only(corrected_cypher)
-        except Exception as e:
-            self.log("Correction Error", f"Failed to call Ollama: {str(e)}")
-            return bad_cypher # Fallback
 
     def execute_query(self, cypher, params=None):
         params = params or {}
@@ -307,36 +241,13 @@ Fix it while strictly adhering to the database schema and the latest Cypher 25 s
         standard_cypher = self.generate_cypher_query(user_query, context)
         self.log("generation", f"Gemma Output: {standard_cypher}")
 
-        # Stage 2: Transform to Vector Search Query using Qwen 14B
+        # Stage 2: Transform to Vector Search Query using External API
         # We only transform if the user is asking for roles/skills (heuristic or always check)
         cypher_query, semantic_term = self.transform_to_vector_query(standard_cypher)
 
-        # Stage 3: Self-correction loop for syntax errors
-        # Use a dummy parameter to avoid "Missing parameters" errors during EXPLAIN validation
-        dummy_params = {"emb_role": [0.0] * 1024} 
-        
-        valid_vector_cypher = False
-        for attempt in range(max_retries):
-            self.log("Validation", f"Attempt {attempt + 1}: Validating Transformation...")
-            is_valid, syntax_meta = self.syntax_validator.validate(cypher_query, database_name=DB_NAME)
-            
-            # If the error is ONLY about missing parameters, it's actually syntactically valid for our purposes
-            if not is_valid and any("Missing parameters" in str(err) for err in (syntax_meta if isinstance(syntax_meta, list) else [syntax_meta])):
-                 self.log("Validation", "Query is valid (ignoring missing parameter warnings during validation).")
-                 is_valid = True
-
-            if is_valid:
-                valid_vector_cypher = True
-                break
-            
-            if attempt < max_retries - 1:
-                self.log("Correction", f"Syntax error detected: {syntax_meta}. Retrying...")
-                cypher_query = self.fix_cypher_syntax(cypher_query, str(syntax_meta), context)
-        
-        # Fallback Logic: If Vector Cypher is invalid after retries, revert to Standard Cypher
-        if not valid_vector_cypher:
-            self.log("Fallback", "Vector Transformation failed validation. Falling back to Standard Cypher.")
-            cypher_query = standard_cypher
+        # Fallback Logic: If Vector Cypher is same as standard (failed API), just proceed
+        if cypher_query == standard_cypher:
+            self.log("Fallback", "Vector Transformation not applied or failed. Using Standard Cypher.")
             semantic_term = None  # Disable embedding injection
 
         # Stage 4: Inject embedding parameter if needed
