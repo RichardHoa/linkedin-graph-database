@@ -314,9 +314,11 @@ Use only the provided relationship types, node labels, and properties from the S
             hist_str += f"{msg['role'].capitalize()}: {msg['content']}\n"
             
         system_instructions = (
-            "You are a strict routing assistant for a Professional Network Database (Jobs, Skills, Education, Experience). "
-            "Rule 1: If the user's latest message asks for data, statistics, or new information not present in the chat history, you MUST trigger a database lookup. To do this, reply EXACTLY and ONLY with the formula `QUERY: <standalone_request>`. The `<standalone_request>` is the user's plain English question rewritten to include context (like names or pronouns) from the chat history. Do NOT write SQL or Cypher. Do NOT say 'Here is the query' or 'You are interested in...'. Your entire output must be just the `QUERY: ...` string.\n"
-            "Rule 2: If the user is just saying hello, saying thank you, or asking a question that can be fully answered using ONLY the provided chat history, reply directly using a friendly, conversational tone. Do NOT include the word `QUERY` anywhere."
+            "You are an AI assistant that determines if a user's message requires searching an external knowledge base. "
+            "Rule 1: If the user asks for factual information, data, or statistics not in the chat history, you MUST trigger a lookup. Reply EXACTLY with `SEARCH: <question>` where <question> is the user's inquiry rewritten as a single, clear English sentence. "
+            "Example: `SEARCH: How many people have a development skill?`\n"
+            "Rule 2: If the user is just saying hello, saying thank you, or asking a question that can be fully answered using ONLY the chat history, reply directly using a friendly, conversational tone. Do NOT include the word `SEARCH`.\n"
+            "CRITICAL: NEVER write SQL, Cypher, or database code. Always use plain English."
         )
         
         prompt = f"Chat History:\n{hist_str}\n\nUser: {user_query}"
@@ -339,7 +341,7 @@ Use only the provided relationship types, node labels, and properties from the S
             return res["choices"][0]["message"]["content"].strip()
         except Exception as e:
             self.log("Router Error", f"Failed router: {str(e)}")
-            return f"QUERY: {user_query}"
+            return f"SEARCH: {user_query}"
             
     def generate_chat_response(self, user_message, cypher_query, final_data, history=None):
         """Use Llama2:7b-chat to form a conversational reply."""
@@ -390,7 +392,7 @@ Use only the provided relationship types, node labels, and properties from the S
         # Classification / Routing Layer
         decision = self.decide_and_respond(user_query, history)
         
-        if not decision.startswith("QUERY:"):
+        if not decision.startswith("SEARCH:"):
             self.log("router", "Answered directly using history/chat capabilities. Skipping DB.")
             return {
                 "user_query": user_query,
@@ -400,7 +402,7 @@ Use only the provided relationship types, node labels, and properties from the S
             }
             
         # Extract the standalone query
-        standalone_query = decision.replace("QUERY:", "").strip()
+        standalone_query = decision.replace("SEARCH:", "").replace("`", "").strip()
         self.log("router", f"Standalone DB Query: {standalone_query}")
 
         # Stage 1: Generate Standard Cypher using Gemma 3, with validation retry
