@@ -152,7 +152,6 @@ class GraphRAGPipeline:
         schema_context += "\n\nThe relationships:\n" + "\n".join(rels)
         if v_idx_info:
             schema_context += "\n\nAvailable Vector Indexes:\n" + "\n".join(v_idx_info)
-            schema_context += "\n(Use corresponding embedding parameter with `db.index.vector.queryNodes` for similarity search)"
 
         with open(schema_file, "w") as f:
             f.write(schema_context)
