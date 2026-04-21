@@ -212,7 +212,7 @@ class GraphRAGPipeline:
         messages = [
             {
                 "role": "system",
-                "content": "You are a Cypher expert for Neo4j v2026. Transform legacy Cypher queries into Cypher 25 using the SEARCH sub-clause. Available vector indexes: Professional (professional_embeddings), Experience (experience_embeddings), Education (education_embeddings), Certification (certification_embeddings). Return ONLY a JSON object with two keys: `cypher_query` (the updated query string), and `embeddings` (a key-value map of variable names you invented to the string values that need to be embedded). Do NOT format the json in backticks.",
+                "content": "You are a Cypher expert. Transform legacy Cypher queries into vector semantic searches using Neo4j's CALL db.index.vector.queryNodes. Available vector indexes: Professional ('professional_embeddings'), Experience ('experience_embeddings'), Education ('education_embeddings'), Certification ('certification_embeddings'). Return ONLY a JSON object with two keys: `cypher_query` (the updated query string), and `embeddings` (a key-value map of variable names you invented to the string values that need to be embedded). Do NOT format the json in backticks.",
             },
             {
                 "role": "user",
@@ -220,7 +220,7 @@ class GraphRAGPipeline:
             },
             {
                 "role": "assistant",
-                "content": '{"cypher_query": "MATCH (j:JobTitle)\\nSEARCH j IN (VECTOR INDEX experience_embeddings FOR $emb_role LIMIT 100000)\\nSCORE AS score\\nWHERE score > 0.8\\nMATCH (e:Experience)-[:ROLE_WAS]->(j)\\nWHERE NOT EXISTS {\\n    MATCH (e)-[:HAS_EDUCATION]->(:Education)-[:AT_UNIVERSITY]->(:University)\\n}\\nRETURN count(DISTINCT e) AS count", "embeddings": {"emb_role": "digital designer"}}',
+                "content": '{"cypher_query": "CALL db.index.vector.queryNodes(\\"experience_embeddings\\", 100000, $emb_role) YIELD node AS j, score\\nWHERE score > 0.8\\nMATCH (e:Experience)-[:ROLE_WAS]->(j)\\nWHERE NOT EXISTS {\\n    MATCH (e)-[:HAS_EDUCATION]->(:Education)-[:AT_UNIVERSITY]->(:University)\\n}\\nRETURN count(DISTINCT e) AS count", "embeddings": {"emb_role": "digital designer"}}',
             },
             {
                 "role": "user",
@@ -228,7 +228,7 @@ class GraphRAGPipeline:
             },
             {
                 "role": "assistant",
-                "content": '{"cypher_query": "MATCH (jt:JobTitle)\\nSEARCH jt IN (VECTOR INDEX experience_embeddings FOR $emb_role LIMIT 100000)\\nSCORE AS score\\nWHERE score > 0.8\\nMATCH (p:Professional)-[:HAS_EXPERIENCE]->(e:Experience)-[:ROLE_WAS]->(jt)\\nRETURN count(DISTINCT p)", "embeddings": {"emb_role": "developer"}}',
+                "content": '{"cypher_query": "CALL db.index.vector.queryNodes(\\"experience_embeddings\\", 100000, $emb_role) YIELD node AS jt, score\\nWHERE score > 0.8\\nMATCH (p:Professional)-[:HAS_EXPERIENCE]->(e:Experience)-[:ROLE_WAS]->(jt)\\nRETURN count(DISTINCT p)", "embeddings": {"emb_role": "developer"}}',
             },
             {
                 "role": "user",
@@ -236,7 +236,7 @@ class GraphRAGPipeline:
             },
             {
                 "role": "assistant",
-                "content": '{"cypher_query": "MATCH (p:Professional)\\nSEARCH p IN (VECTOR INDEX professional_embeddings FOR $emb_prof LIMIT 100000)\\nSCORE AS score\\nWHERE score > 0.8 AND p.location CONTAINS \\"New York\\"\\nRETURN p.name LIMIT 10", "embeddings": {"emb_prof": "Data Scientist"}}',
+                "content": '{"cypher_query": "CALL db.index.vector.queryNodes(\\"professional_embeddings\\", 100000, $emb_prof) YIELD node AS p, score\\nWHERE score > 0.8 AND p.location CONTAINS \\"New York\\"\\nRETURN p.name LIMIT 10", "embeddings": {"emb_prof": "Data Scientist"}}',
             },
             {"role": "user", "content": f"Transform: {standard_cypher}"},
         ]
