@@ -328,8 +328,16 @@ Use only the provided relationship types, node labels, and properties from the S
         ]
         
         try:
-            res = ollama.chat(model="llama2:7b-chat", messages=messages, options={"temperature": 0.1})
-            return res["message"]["content"].strip()
+            data = {
+                "model": "llama2:7b-chat",
+                "messages": messages,
+                "temperature": 0.4,
+                "stream": False
+            }
+            response = requests.post(self.api_url, headers=self.api_headers, json=data, timeout=30)
+            response.raise_for_status()
+            res = response.json()
+            return res["choices"][0]["message"]["content"].strip()
         except Exception as e:
             self.log("Router Error", f"Failed router: {str(e)}")
             return f"QUERY: {user_query}"
@@ -359,11 +367,16 @@ Use only the provided relationship types, node labels, and properties from the S
         ]
 
         try:
-            # Temperature = 0.3 requested by user
-            res = ollama.chat(
-                model="llama2:7b-chat", messages=messages, options={"temperature": 0.3}
-            )
-            return res["message"]["content"].strip()
+            data = {
+                "model": "llama2:7b-chat",
+                "messages": messages,
+                "temperature": 0.3,
+                "stream": False
+            }
+            response = requests.post(self.api_url, headers=self.api_headers, json=data, timeout=30)
+            response.raise_for_status()
+            res = response.json()
+            return res["choices"][0]["message"]["content"].strip()
         except Exception as e:
             self.log("Chat Error", f"Failed Llama2-chat structuring: {str(e)}")
             if len(final_data) > 0 and "error" in final_data[0]:
