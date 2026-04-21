@@ -420,20 +420,29 @@ Use only the provided relationship types, node labels, and properties from the S
                 standard_cypher, database_name=DB_NAME
             )
             prop_score, prop_meta = self.props_validator.validate(
+                standard_cypher, database_name=DB_NAME, strict=False
+            )
+            sch_score, sch_meta = self.schema_validator.validate(
                 standard_cypher, database_name=DB_NAME
             )
+            
+            err_ext = ""
+            if syn_score is not None and syn_score != 1:
+                err_ext += f"Syntax: {syn_meta}. "
+            if prop_score is not None and prop_score != 1:
+                err_ext += f"Props: {prop_meta}. "
+            if sch_score is not None and sch_score != 1:
+                err_ext += f"Schema: {sch_meta}."
 
-            if syn_score == 1 and prop_score == 1:
+            if not err_ext:
                 break
             elif attempt < max_retries - 1:
                 self.log(
-                    "retry loop", f"Syntax/Prop validation failed. Informing model..."
+                    "retry loop", f"Validation failed. Informing model..."
                 )
-                # We could append error to user_query, but for simplicity, we just redo it since we don't hold conversation history in self.generate_cypher_query
-                # A quick hack is to just add the error context to the query
-                err_ext = f"\n\nPrevious attempt failed with syntax score {syn_score} ({syn_meta}) and prop score {prop_score} ({prop_meta}). Please fix it!"
-                if err_ext not in user_query:
-                    user_query += err_ext
+                retry_msg = f"\n\nPrevious attempt failed validation. Please fix: {err_ext.strip()}"
+                if retry_msg not in standalone_query:
+                    standalone_query += retry_msg
 
         # Stage 2: Transform to Vector Search Query using External API
         cypher_query, embeddings_map = self.transform_to_vector_query(standard_cypher)
