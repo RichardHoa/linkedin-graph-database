@@ -9,7 +9,7 @@ headers = {
 }
 
 data = {
-    "model": "qwen2.5-coder:14b",
+    "model": "llama2:7b-chat",
     "messages": [
       {
         "role": "system",

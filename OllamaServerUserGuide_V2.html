@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User: Orin AI API Usage</title>
+    <style>
+        :root { 
+            --primary: #2c3e50; 
+            --bg: #ffffff; 
+            --term-bg: #1e1e1e; 
+            --term-txt: #d4d4d4; 
+            --accent: #e67e22;
+        }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            line-height: 1.6; 
+            padding: 40px; 
+            color: #333; 
+            max-width: 1000px; 
+            margin: auto; 
+            background-color: #f4f7f6;
+        }
+        .container {
+            background: var(--bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .terminal-wrapper {
+            position: relative;
+            margin: 20px 0;
+        }
+        .terminal { 
+            background: var(--term-bg); 
+            border-radius: 8px; 
+            padding: 20px; 
+            font-family: 'Cascadia Code', 'Courier New', monospace; 
+            color: var(--term-txt); 
+            white-space: pre; 
+            overflow-x: auto; 
+            font-size: 0.9em;
+            border-left: 5px solid var(--accent);
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background 0.2s;
+        }
+        .copy-btn:hover { background: rgba(255, 255, 255, 0.2); }
+        
+        h1 { border-bottom: 3px solid var(--primary); padding-bottom: 10px; color: var(--primary); }
+        h2 { color: var(--accent); margin-top: 35px; border-left: 4px solid var(--accent); padding-left: 15px; }
+        
+        .endpoint-box { 
+            background: #eef7ff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            border: 1px solid #b3d7ff; 
+            margin: 20px 0;
+        }
+        .param-list { background: #fdfdfd; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
+        code { font-weight: bold; color: #c0392b; background: #fff5f5; padding: 2px 6px; border-radius: 4px; }
+        .comment { color: #6a9955; font-style: italic; }
+    </style>
+    <script>
+        function copyCode(button) {
+            const code = button.parentElement.querySelector('.terminal').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.innerText;
+                button.innerText = "Copied!";
+                setTimeout(() => { button.innerText = originalText; }, 2000);
+            });
+        }
+    </script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Client Usage: Orin Inference Server</h1>
+        
+        <div class="endpoint-box">
+            <strong>Public API Endpoint:</strong> <code>https://apollo.quocanmeomeo.io.vn/v1</code><br>
+            <strong>Default Model:</strong> <code>qwen3.5:0.8b</code><br>
+            <strong>Authentication:</strong> Bearer Token
+        </div>
+
+        <p>This server provides an OpenAI-compatible API. You can integrate this with any standard AI tool or script by changing the base URL and providing your key.</p>
+
+        <h2>1. Pull a New Model (Remote Admin)</h2>
+        <p>Use this command to download new models directly to the Orin AGX hardware via the public endpoint.</p>
+        <div class="terminal-wrapper">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <div class="terminal">curl -X POST https://apollo.quocanmeomeo.io.vn/api/pull \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "qwen3.5:0.8b",
+    "stream": false
+  }'</div>
+        </div>
+
+        <h2>2. Terminal (cURL Chat)</h2>
+        <p>Perform a quick chat completion test from any terminal (Linux, Mac, or Windows CMD).</p>
+        <div class="terminal-wrapper">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <div class="terminal">curl -X POST https://apollo.quocanmeomeo.io.vn/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3.5:0.8b",
+    "messages": [{"role": "user", "content": "Hello! Who are you?"}],
+    "stream": false
+  }'</div>
+        </div>
+
+        <h2>3. Python (Requests with IPv4 Fix)</h2>
+        <p>This script includes a fix to force IPv4, preventing connection timeouts on Netbird tunnels.</p>
+        <div class="terminal-wrapper">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <div class="terminal"><span class="comment">import socket
+import requests
+
+# Force IPv4 to prevent tunnel timeout</span>
+socket.getaddrinfo = lambda *args, **kwargs: [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
+
+url = "https://apollo.quocanmeomeo.io.vn/v1/chat/completions"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+data = {
+    "model": "qwen3.5:0.8b",
+    "messages": [{"role": "user", "content": "Hello Orin!"}],
+    "stream": False
+}
+
+print("Sending request via IPv4...")
+try:
+    response = requests.post(url, headers=headers, json=data, timeout=30)
+    print("Response:", response.json()['choices'][0]['message']['content'])
+except Exception as e:
+    print(f"Failed: {e}")</div>
+        </div>
+
+        <h2>4. R (httr2)</h2>
+        <p>The modern standard for performing structured API requests in R.</p>
+        <div class="terminal-wrapper">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <div class="terminal">library(httr2)
+
+req <- request("https://apollo.quocanmeomeo.io.vn/v1/chat/completions") %>%
+  req_headers(Authorization = "Bearer YOUR_API_KEY") %>%
+  req_body_json(list(
+    model = "qwen3.5:0.8b",
+    messages = list(list(role="user", content="Hola!")),
+    stream = FALSE
+  ))
+
+resp <- req_perform(req)
+cat(resp_body_json(resp)$choices[[1]]$message$content)</div>
+        </div>
+
+        <h2>Common API Parameters</h2>
+        <div class="param-list">
+            <ul>
+                <li><code>model</code>: The name of the model (e.g., <code>qwen3.5:0.8b</code>).</li>
+                <li><code>temperature</code>: (0.0 - 1.0) <code>0.0</code> is factual, <code>1.0</code> is creative.</li>
+                <li><code>stream</code>: Set to <code>false</code> for static JSON responses.</li>
+                <li><code>num_ctx</code>: Set the context window size (e.g. <code>4096</code>).</li>
+            </ul>
+        </div>
+
+        <p style="margin-top:40px; font-size: 0.8em; color: #888; text-align: center;">
+            Connection encrypted via SSL. Tunneled via Netbird. Hardware: NVIDIA Orin AGX.
+        </p>
+    </div>
+
+</body>
+</html>

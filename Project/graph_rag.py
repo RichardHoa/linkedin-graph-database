@@ -59,6 +59,12 @@ class GraphRAGPipeline:
 
     def get_system_context(self):
         """Retrieves the LIVE database state with rich metadata and property examples."""
+        schema_file = "schema_cache.txt"
+        if os.path.exists(schema_file):
+            self.log("context", "Loading schema from cache...")
+            with open(schema_file, "r") as f:
+                return f.read()
+
         self.log("context", "Fetching rich schema from Neo4j...")
         
         # 1. Fetch labels and properties with examples
@@ -75,11 +81,20 @@ class GraphRAGPipeline:
                 label_lines = [f"- **{label}**"]
                 for p_key, p_val in node.items():
                     p_type = type(p_val).__name__.upper()
-                    # Sanitize example value
-                    example = str(p_val).replace("\n", " ")
-                    if len(example) > 100:
-                        example = example[:97] + "..."
-                    label_lines.append(f"  - `{p_key}`: {p_type} Example: \"{example}\"")
+                    if p_type in ('STR', 'STRING'):
+                        distinct_cnt = session.run(f"MATCH (n:{label}) WHERE n.`{p_key}` IS NOT NULL RETURN count(DISTINCT n.`{p_key}`) AS cnt").single()['cnt']
+                        if 0 < distinct_cnt <= 25:
+                            vals = session.run(f"MATCH (n:{label}) WHERE n.`{p_key}` IS NOT NULL RETURN DISTINCT n.`{p_key}` AS val LIMIT 25").value()
+                            enum_str = f"Enum values: {vals}"
+                        else:
+                            example = str(p_val).replace("\n", " ")
+                            if len(example) > 100: example = example[:97] + "..."
+                            enum_str = f"Example: \"{example}\""
+                    else:
+                        example = str(p_val).replace("\n", " ")
+                        if len(example) > 100: example = example[:97] + "..."
+                        enum_str = f"Example: \"{example}\""
+                    label_lines.append(f"  - `{p_key}`: {p_type} {enum_str}")
                 node_props.append("\n".join(label_lines))
 
             # 2. Fetch relationships using path pattern matching
@@ -88,7 +103,41 @@ class GraphRAGPipeline:
                 RETURN DISTINCT labels(n)[0] AS source, type(r) AS type, labels(m)[0] AS target 
                 LIMIT 50
             """).data()
-            rels = [f"(:{r['source']})-[:{r['type']}]->(:{r['target']})" for r in rel_records]
+            
+            rels = []
+            for r in rel_records:
+                rel_type = r['type']
+                source = r['source']
+                target = r['target']
+                
+                sample_rel = session.run(f"MATCH (:{source})-[r:{rel_type}]->(:{target}) RETURN r LIMIT 1").single()
+                if sample_rel and sample_rel[0]:
+                    r_props = sample_rel[0]
+                    prop_lines = []
+                    for p_key, p_val in r_props.items():
+                        p_type = type(p_val).__name__.upper()
+                        if p_type in ('STR', 'STRING'):
+                            distinct_cnt = session.run(f"MATCH (:{source})-[r:{rel_type}]->(:{target}) WHERE r.`{p_key}` IS NOT NULL RETURN count(DISTINCT r.`{p_key}`) AS cnt").single()['cnt']
+                            if 0 < distinct_cnt <= 25:
+                                vals = session.run(f"MATCH (:{source})-[r:{rel_type}]->(:{target}) WHERE r.`{p_key}` IS NOT NULL RETURN DISTINCT r.`{p_key}` AS val LIMIT 25").value()
+                                enum_str = f"Enum values: {vals}"
+                            else:
+                                example = str(p_val).replace("\n", " ")
+                                if len(example) > 100: example = example[:97] + "..."
+                                enum_str = f"Example: \"{example}\""
+                        else:
+                            example = str(p_val).replace("\n", " ")
+                            if len(example) > 100: example = example[:97] + "..."
+                            enum_str = f"Example: \"{example}\""
+                        prop_lines.append(f"    - `{p_key}`: {p_type} {enum_str}")
+                    
+                    rel_desc = f"(:{source})-[:{rel_type}]->(:{target})"
+                    if prop_lines:
+                        rels.append(rel_desc + "\n" + "\n".join(prop_lines))
+                    else:
+                        rels.append(rel_desc)
+                else:
+                    rels.append(f"(:{source})-[:{rel_type}]->(:{target})")
 
             # 3. Fetch Vector Indexes for context
             vector_indexes = session.run("""
@@ -103,8 +152,11 @@ class GraphRAGPipeline:
         schema_context += "\n\nThe relationships:\n" + "\n".join(rels)
         if v_idx_info:
             schema_context += "\n\nAvailable Vector Indexes:\n" + "\n".join(v_idx_info)
-            schema_context += "\n(Use `$embedding` parameter with `db.index.vector.queryNodes` for similarity search)"
+            schema_context += "\n(Use corresponding embedding parameter with `db.index.vector.queryNodes` for similarity search)"
 
+        with open(schema_file, "w") as f:
+            f.write(schema_context)
+            
         return schema_context
 
     def get_embedding(self, text):
@@ -130,41 +182,36 @@ class GraphRAGPipeline:
         """Transform standard Cypher to Cypher 25 Vector Search using external API."""
         self.log("transformation", "Applying AI semantic transformation...")
 
-        # 1. Extract search term from original query for embedding purposes
-        where_pattern = r"WHERE\s+(?:toLower\()?\s*(\w+)\.(\w+)\s*\)?\s*(?:=|(?:CONTAINS))\s*(['\"])(.*?)\3"
-        where_match = re.search(where_pattern, standard_cypher, re.IGNORECASE)
-        search_term = where_match.group(4) if where_match else None
-
-        # 2. Prepare API call
+        # 1. Prepare API call
         messages = [
             {
                 "role": "system",
-                "content": "You are a Cypher expert for Neo4j v2026. Transform legacy Cypher queries into Cypher 25 using the SEARCH sub-clause. Available vector indexes: Professional (professional_embeddings), Experience (experience_embeddings), Education (education_embeddings), Certification (certification_embeddings). Return ONLY the Cypher query and nothing else."
+                "content": "You are a Cypher expert for Neo4j v2026. Transform legacy Cypher queries into Cypher 25 using the SEARCH sub-clause. Available vector indexes: Professional (professional_embeddings), Experience (experience_embeddings), Education (education_embeddings), Certification (certification_embeddings). Return ONLY a JSON object with two keys: `cypher_query` (the updated query string), and `embeddings` (a key-value map of variable names you invented to the string values that need to be embedded). Do NOT format the json in backticks."
             },
             {
                 "role": "user",
                 "content": "Transform: MATCH (e:Experience)-[:ROLE_WAS]->(j:JobTitle {name: \"digital designer\"}) WHERE NOT EXISTS { MATCH (e)-[:HAS_EDUCATION]->(edu:Education)-[:AT_UNIVERSITY]->(u:University) RETURN edu } RETURN count(DISTINCT e) AS count"
             },
-            {
-                "role": "assistant",
-                "content": "CYPHER 25\nMATCH (j:JobTitle)\nSEARCH j IN (VECTOR INDEX experience_embeddings FOR $emb_role LIMIT 100)\nSCORE AS score\nWHERE score > 0.8\nMATCH (e:Experience)-[:ROLE_WAS]->(j)\nWHERE NOT EXISTS {\n    MATCH (e)-[:HAS_EDUCATION]->(:Education)-[:AT_UNIVERSITY]->(:University)\n}\nRETURN count(DISTINCT e) AS count"
-            },
+   {
+    "role": "assistant",
+    "content": "{\"cypher_query\": \"MATCH (j:JobTitle)\\nSEARCH j IN (VECTOR INDEX experience_embeddings FOR $emb_role LIMIT 100000)\\nSCORE AS score\\nWHERE score > 0.8\\nMATCH (e:Experience)-[:ROLE_WAS]->(j)\\nWHERE NOT EXISTS {\\n    MATCH (e)-[:HAS_EDUCATION]->(:Education)-[:AT_UNIVERSITY]->(:University)\\n}\\nRETURN count(DISTINCT e) AS count\", \"embeddings\": {\"emb_role\": \"digital designer\"}}"
+},
             {
                 "role": "user",
                 "content": "Transform: MATCH (p:Professional)-[:HAS_EXPERIENCE]->(e:Experience)-[:ROLE_WAS]->(jt:JobTitle) WHERE jt.name = \"developer\" RETURN count(DISTINCT p)"
             },
-            {
-                "role": "assistant",
-                "content": "CYPHER 25\nMATCH (jt:JobTitle)\nSEARCH jt IN (VECTOR INDEX experience_embeddings FOR $emb_role LIMIT 100)\nSCORE AS score\nWHERE score > 0.8\nMATCH (p:Professional)-[:HAS_EXPERIENCE]->(e:Experience)-[:ROLE_WAS]->(jt)\nRETURN count(DISTINCT p)"
-            },
+      {
+    "role": "assistant",
+    "content": "{\"cypher_query\": \"MATCH (jt:JobTitle)\\nSEARCH jt IN (VECTOR INDEX experience_embeddings FOR $emb_role LIMIT 100000)\\nSCORE AS score\\nWHERE score > 0.8\\nMATCH (p:Professional)-[:HAS_EXPERIENCE]->(e:Experience)-[:ROLE_WAS]->(jt)\\nRETURN count(DISTINCT p)\", \"embeddings\": {\"emb_role\": \"developer\"}}"
+},
             {
                 "role": "user",
-                "content": "Transform: MATCH (p:Professional) WHERE p.headline CONTAINS \"Data Scientist\" RETURN p.name LIMIT 10"
+                "content": "Transform: MATCH (p:Professional) WHERE p.headline CONTAINS \"Data Scientist\" AND p.location CONTAINS \"New York\" RETURN p.name LIMIT 10"
             },
-            {
-                "role": "assistant",
-                "content": "CYPHER 25\nMATCH (p:Professional)\nSEARCH p IN (VECTOR INDEX professional_embeddings FOR $emb_role LIMIT 100)\nSCORE AS score\nWHERE score > 0.8\nRETURN p.name LIMIT 10"
-            },
+         {
+    "role": "assistant",
+    "content": "{\"cypher_query\": \"MATCH (p:Professional)\\nSEARCH p IN (VECTOR INDEX professional_embeddings FOR $emb_prof LIMIT 100000)\\nSCORE AS score\\nWHERE score > 0.8 AND p.location CONTAINS \\\"New York\\\"\\nRETURN p.name LIMIT 10\", \"embeddings\": {\"emb_prof\": \"Data Scientist\"}}"
+},
             {
                 "role": "user",
                 "content": f"Transform: {standard_cypher}"
@@ -180,12 +227,19 @@ class GraphRAGPipeline:
             response = requests.post(self.api_url, headers=self.api_headers, json=data, timeout=30)
             response.raise_for_status()
             result = response.json()
-            transformed_cypher = self.extract_cypher_only(result['choices'][0]['message']['content'])
+            raw_text = result['choices'][0]['message']['content'].strip()
+            
+            # Use json_repair to safely load potentially malformed json
+            parsed_data = json_repair.loads(raw_text)
+            
+            transformed_cypher = parsed_data.get('cypher_query', standard_cypher)
+            embeddings_map = parsed_data.get('embeddings', {})
+            
             self.log("transformation", "AI Transformation successful.")
-            return transformed_cypher, search_term
+            return transformed_cypher, embeddings_map
         except Exception as e:
             self.log("transformation error", f"AI Transformation failed: {str(e)}")
-            return standard_cypher, None
+            return standard_cypher, {}
 
 
     def generate_cypher_query(self, user_query, schema_context):
@@ -232,53 +286,98 @@ Use only the provided relationship types, node labels, and properties from the S
                 self.log("Neo4j Error", f"Query failed: {str(e)}")
                 return [{"error": str(e)}]
         
+    def generate_chat_response(self, user_message, cypher_query, final_data):
+        """Use Llama2:7b-chat to form a conversational reply."""
+        self.log("chat response", "Structuring response with llama2:7b-chat...")
+        system_instructions = (
+            "You are a helpful AI assistant connected to a specialized Neo4j database. "
+            "You govern the conversation. Always greet the user nicely if appropriate. "
+            "You are provided with the user's message, the generated Cypher query, and the resulting database output data (JSON format). "
+            "Examine if there are any errors in the DB result, and if so, apologize and explain."
+            "Otherwise, formulate a clear, readable, conversational answer directly answering the user."
+            "Do NOT output plain JSON to the user unless they ask for it. Do NOT output raw Cypher to the user unless they ask for it."
+        )
+        
+        context_str = f"User Message: {user_message}\nCypher Query Executed: {cypher_query}\nDatabase Output: {json.dumps(final_data)}"
+        
+        messages = [
+            {"role": "system", "content": system_instructions},
+            {"role": "user", "content": context_str}
+        ]
+        
+        try:
+            # Temperature = 0.3 requested by user
+            res = ollama.chat(model='llama2:7b-chat', messages=messages, options={'temperature': 0.3})
+            return res['message']['content'].strip()
+        except Exception as e:
+            self.log("Chat Error", f"Failed Llama2-chat structuring: {str(e)}")
+            if len(final_data) > 0 and "error" in final_data[0]:
+                return f"**Database Error:**\n{final_data[0]['error']}\n\n**Generated Cypher:**\n```cypher\n{cypher_query}\n```"
+            return f"**Results:**\n```json\n{json.dumps(final_data, indent=2)}\n```\n\n**Generated Cypher:**\n```cypher\n{cypher_query}\n```"
+
     def run(self, user_query):
         context = self.cached_context
-        max_retries = 3
+        max_retries = 5
         
-        # Stage 1: Generate Standard Cypher using Gemma 3
+        # Stage 1: Generate Standard Cypher using Gemma 3, with validation retry
         self.log("generation", f"Stage 1: Generating standard Cypher intent...")
-        standard_cypher = self.generate_cypher_query(user_query, context)
-        self.log("generation", f"Gemma Output: {standard_cypher}")
-
+        
+        standard_cypher = ""
+        for attempt in range(max_retries):
+            standard_cypher = self.generate_cypher_query(user_query, context)
+            self.log("generation", f"Gemma Output (Attempt {attempt+1}): {standard_cypher}")
+            
+            # Syntax validation loop
+            syn_score, syn_meta = self.syntax_validator.validate(standard_cypher, database_name=DB_NAME)
+            prop_score, prop_meta = self.props_validator.validate(standard_cypher, database_name=DB_NAME)
+            
+            if syn_score == 1 and prop_score == 1:
+                break
+            elif attempt < max_retries - 1:
+                self.log("retry loop", f"Syntax/Prop validation failed. Informing model...")
+                # We could append error to user_query, but for simplicity, we just redo it since we don't hold conversation history in self.generate_cypher_query
+                # A quick hack is to just add the error context to the query
+                err_ext = f"\n\nPrevious attempt failed with syntax score {syn_score} ({syn_meta}) and prop score {prop_score} ({prop_meta}). Please fix it!"
+                if err_ext not in user_query:
+                    user_query += err_ext
+        
         # Stage 2: Transform to Vector Search Query using External API
-        # We only transform if the user is asking for roles/skills (heuristic or always check)
-        cypher_query, semantic_term = self.transform_to_vector_query(standard_cypher)
+        cypher_query, embeddings_map = self.transform_to_vector_query(standard_cypher)
 
-        # Fallback Logic: If Vector Cypher is same as standard (failed API), just proceed
+        # Fallback Logic
         if cypher_query == standard_cypher:
             self.log("Fallback", "Vector Transformation not applied or failed. Using Standard Cypher.")
-            semantic_term = None  # Disable embedding injection
+            embeddings_map = {}
 
-        # Stage 4: Inject embedding parameter if needed
+        # Stage 4: Inject embedding parameters
         params = {}
-        if semantic_term and "$emb_role" in cypher_query:
-            self.log("embedding", f"Generating vector for semantic term: {semantic_term}")
-            vector = self.get_embedding(semantic_term)
-            if vector:
-                params["emb_role"] = vector
-            else:
-                self.log("embedding", "Proceeding without embedding due to generation failure.")
-        elif "$emb_role" in cypher_query:
-            self.log("embedding", f"Fallback: Generating vector for query: {user_query}")
+        if embeddings_map:
+            for emb_var, semantic_term in embeddings_map.items():
+                self.log("embedding", f"Generating vector for semantic term: {semantic_term} into ${emb_var}")
+                vector = self.get_embedding(semantic_term)
+                if vector:
+                    params[emb_var] = vector
+                else:
+                    self.log("embedding", f"Failed embedding for {semantic_term}")
+        elif "emb_" in cypher_query:
+            # Fallback if params not parsed properly but exist in query
+            self.log("embedding", f"Fallback: Generating generic vector for query: {user_query}")
             vector = self.get_embedding(user_query)
-            if vector: params["emb_role"] = vector
+            if vector: params["emb_role"] = vector # Hardcoded assumption string, hopefully avoided
 
-        # Step 5: Final validation and execution
-        try:
-            schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
-            if schema_score != 1:
-                 self.log("Schema Warning", f"Schema validation score: {schema_score}. Meta: {schema_meta}")
+        # Stage 5: Final Validation and Execution
+        schema_score, schema_meta = self.schema_validator.validate(cypher_query, database_name=DB_NAME)
+        if schema_score != 1:
+            self.log("Schema Warning", f"Schema validation score: {schema_score}. Meta: {schema_meta}")
                 
-            props_score, props_meta = self.props_validator.validate(cypher_query, database_name=DB_NAME, strict=False)
-            if props_score is not None and props_score != 1:
-                self.log("Props Warning", f"Props validation score: {props_score}. Meta: {props_meta}")
-        except Exception as e:
-            self.log("Validation Cleanup", f"Validation skipped or failed gracefully: {str(e)}")
-            
         final_data = self.execute_query(cypher_query, params)
+        
+        # Formulate Chat Reply with Llama2:7b-chat
+        chat_reply = self.generate_chat_response(user_query, cypher_query, final_data)
+        
         return {
             "user_query": user_query,
             "cypher_query": cypher_query,
-            "final_data": final_data
+            "final_data": final_data,
+            "chat_reply": chat_reply
         }
