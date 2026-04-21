@@ -22,7 +22,7 @@ AUTH = ("neo4j", os.getenv("NEO4J_SECRET"))
 DB_NAME = "neo4j"
 
 OLLAMA_MODEL_ID = (
-    "hf.co/mradermacher/text-to-cypher-Gemma-3-4B-Instruct-2025.04.0-GGUF:Q8_0"
+    "hf.co/mradermacher/text-to-cypher-Gemma-3-27B-Instruct-2025.04.0-i1-GGUF:Q4_K_S"
 )
 EMBED_MODEL = "mxbai-embed-large"
 
@@ -305,19 +305,53 @@ Use only the provided relationship types, node labels, and properties from the S
                 self.log("Neo4j Error", f"Query failed: {str(e)}")
                 return [{"error": str(e)}]
 
-    def generate_chat_response(self, user_message, cypher_query, final_data):
+    def decide_and_respond(self, user_query, history):
+        """Use Llama2 to decide whether to query the DB or chat directly."""
+        self.log("router", "Deciding if DB query is necessary...")
+        
+        hist_str = ""
+        for msg in history[-6:]: # Include last 6 messages
+            hist_str += f"{msg['role'].capitalize()}: {msg['content']}\n"
+            
+        system_instructions = (
+            "You are a smart routing assistant for a Professional Graph Database ( contenant Jobs, Skills, Education, Experience). "
+            "Examine the chat history and the user's latest message. "
+            "If the user is asking a question that requires querying the database for new data, respond with EXACTLY: 'QUERY: <Standalone Query>' where <Standalone Query> is the user's query rewritten to include all necessary context from history (like names or subjects). "
+            "If the user is greeting, giving feedback, or asking a question that can be completely answered using the information already provided in the chat history, then respond with a direct, conversational reply. Do NOT output the word 'QUERY:' in this case."
+        )
+        
+        prompt = f"Chat History:\n{hist_str}\n\nUser: {user_query}"
+        
+        messages = [
+            {"role": "system", "content": system_instructions},
+            {"role": "user", "content": prompt}
+        ]
+        
+        try:
+            res = ollama.chat(model="llama2:7b-chat", messages=messages, options={"temperature": 0.1})
+            return res["message"]["content"].strip()
+        except Exception as e:
+            self.log("Router Error", f"Failed router: {str(e)}")
+            return f"QUERY: {user_query}"
+            
+    def generate_chat_response(self, user_message, cypher_query, final_data, history=None):
         """Use Llama2:7b-chat to form a conversational reply."""
         self.log("chat response", "Structuring response with llama2:7b-chat...")
         system_instructions = (
             "You are a helpful AI assistant connected to a specialized Neo4j database. "
             "You govern the conversation. Always greet the user nicely if appropriate. "
-            "You are provided with the user's message, the generated Cypher query, and the resulting database output data (JSON format). "
-            "Examine if there are any errors in the DB result, and if so, apologize and explain."
+            "You are provided with the conversation history, the user's message, the generated Cypher query, and the resulting database output data (JSON format). "
+            "Examine if there are any errors in the DB result, and if so, apologize and explain. "
             "Otherwise, formulate a clear, readable, conversational answer directly answering the user."
             "Do NOT output plain JSON to the user unless they ask for it. Do NOT output raw Cypher to the user unless they ask for it."
         )
-
-        context_str = f"User Message: {user_message}\nCypher Query Executed: {cypher_query}\nDatabase Output: {json.dumps(final_data)}"
+        
+        hist_str = ""
+        if history:
+            for msg in history[-4:]:
+                hist_str += f"{msg['role'].capitalize()}: {msg['content']}\n"
+        
+        context_str = f"Chat History:\n{hist_str}\n\nUser Message: {user_message}\nCypher Query Executed: {cypher_query}\nDatabase Output: {json.dumps(final_data)}"
 
         messages = [
             {"role": "system", "content": system_instructions},
@@ -336,16 +370,33 @@ Use only the provided relationship types, node labels, and properties from the S
                 return f"**Database Error:**\n{final_data[0]['error']}\n\n**Generated Cypher:**\n```cypher\n{cypher_query}\n```"
             return f"**Results:**\n```json\n{json.dumps(final_data, indent=2)}\n```\n\n**Generated Cypher:**\n```cypher\n{cypher_query}\n```"
 
-    def run(self, user_query):
+    def run(self, user_query, history=None):
         context = self.cached_context
         max_retries = 5
+        history = history or []
+
+        # Classification / Routing Layer
+        decision = self.decide_and_respond(user_query, history)
+        
+        if not decision.startswith("QUERY:"):
+            self.log("router", "Answered directly using history/chat capabilities. Skipping DB.")
+            return {
+                "user_query": user_query,
+                "cypher_query": "N/A",
+                "final_data": [],
+                "chat_reply": decision
+            }
+            
+        # Extract the standalone query
+        standalone_query = decision.replace("QUERY:", "").strip()
+        self.log("router", f"Standalone DB Query: {standalone_query}")
 
         # Stage 1: Generate Standard Cypher using Gemma 3, with validation retry
         self.log("generation", f"Stage 1: Generating standard Cypher intent...")
 
         standard_cypher = ""
         for attempt in range(max_retries):
-            standard_cypher = self.generate_cypher_query(user_query, context)
+            standard_cypher = self.generate_cypher_query(standalone_query, context)
             self.log(
                 "generation", f"Gemma Output (Attempt {attempt+1}): {standard_cypher}"
             )
@@ -419,10 +470,10 @@ Use only the provided relationship types, node labels, and properties from the S
         final_data = self.execute_query(cypher_query, params)
 
         # Formulate Chat Reply with Llama2:7b-chat
-        chat_reply = self.generate_chat_response(user_query, cypher_query, final_data)
+        chat_reply = self.generate_chat_response(standalone_query, cypher_query, final_data, history)
 
         return {
-            "user_query": user_query,
+            "user_query": standalone_query,
             "cypher_query": cypher_query,
             "final_data": final_data,
             "chat_reply": chat_reply,
