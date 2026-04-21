@@ -314,10 +314,9 @@ Use only the provided relationship types, node labels, and properties from the S
             hist_str += f"{msg['role'].capitalize()}: {msg['content']}\n"
             
         system_instructions = (
-            "You are a smart routing assistant for a Professional Graph Database ( contenant Jobs, Skills, Education, Experience). "
-            "Examine the chat history and the user's latest message. "
-            "If the user is asking a question that requires querying the database for new data, respond with EXACTLY: 'QUERY: <Standalone Query>' where <Standalone Query> is the user's query rewritten to include all necessary context from history (like names or subjects). "
-            "If the user is greeting, giving feedback, or asking a question that can be completely answered using the information already provided in the chat history, then respond with a direct, conversational reply. Do NOT output the word 'QUERY:' in this case."
+            "You are a strict routing assistant for a Professional Network Database (Jobs, Skills, Education, Experience). "
+            "Rule 1: If the user's latest message asks for data, statistics, or new information not present in the chat history, you MUST trigger a database lookup. To do this, reply EXACTLY and ONLY with the formula `QUERY: <standalone_request>`. The `<standalone_request>` is the user's plain English question rewritten to include context (like names or pronouns) from the chat history. Do NOT write SQL or Cypher. Do NOT say 'Here is the query' or 'You are interested in...'. Your entire output must be just the `QUERY: ...` string.\n"
+            "Rule 2: If the user is just saying hello, saying thank you, or asking a question that can be fully answered using ONLY the provided chat history, reply directly using a friendly, conversational tone. Do NOT include the word `QUERY` anywhere."
         )
         
         prompt = f"Chat History:\n{hist_str}\n\nUser: {user_query}"
