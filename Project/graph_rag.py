@@ -5,13 +5,11 @@ from neo4j import GraphDatabase
 from dotenv import load_dotenv
 import os
 
-# from transformers import AutoModelForCausalLM, AutoTokenizer (REPLACED BY OLLAMA)
 from neo4j_graphrag.schema import get_schema
 import sys
 
 sys.path.append("CyVer")
 from CyVer import SyntaxValidator, SchemaValidator, PropertiesValidator
-import ollama
 import json_repair
 import requests
 
@@ -21,9 +19,9 @@ URI = "bolt://localhost:7687"
 AUTH = ("neo4j", os.getenv("NEO4J_SECRET"))
 DB_NAME = "neo4j"
 
-OLLAMA_MODEL_ID = (
-    "hf.co/mradermacher/text-to-cypher-Gemma-3-27B-Instruct-2025.04.0-i1-GGUF:Q4_K_S"
-)
+INTENT_MODEL = "hf.co/mradermacher/text-to-cypher-Gemma-3-27B-Instruct-2025.04.0-i1-GGUF:Q4_K_S"
+TRANSFORM_MODEL = "qwen3-coder:30b"
+CHAT_MODEL = "llama3.3:70b"
 EMBED_MODEL = "mxbai-embed-large"
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
@@ -34,26 +32,24 @@ class GraphRAGPipeline:
         self.driver = driver
         self.log_indent = log_indent
 
-        self.model_id = OLLAMA_MODEL_ID
-        self.log("init", f"Using Ollama model {self.model_id}")
-
-        self.log("init", "Initializing System Context...")
-        self.cached_context = self.get_system_context()
-        self.log("system context", self.cached_context)  # Optional: reduce noise
-
-        self.syntax_validator = SyntaxValidator(
-            self.driver, check_multilabeled_nodes=False
-        )
-        self.schema_validator = SchemaValidator(self.driver)
-        self.props_validator = PropertiesValidator(self.driver)
-
-        # API Configuration
         self.api_key = os.getenv("API_KEY")
         self.api_url = "https://apollo.quocanmeomeo.io.vn/v1/chat/completions"
         self.api_headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
+
+        self.log("init", f"Using remote models for pipeline")
+
+        self.log("init", "Initializing System Context...")
+        self.cached_context = self.get_system_context()
+        self.log("system context", "System context loaded.")
+
+        self.syntax_validator = SyntaxValidator(
+            self.driver, check_multilabeled_nodes=False
+        )
+        self.schema_validator = SchemaValidator(self.driver)
+        self.props_validator = PropertiesValidator(self.driver)
 
     def log(self, stage, message, data=None):
         log_entry = {
@@ -187,21 +183,41 @@ class GraphRAGPipeline:
         return schema_context
 
     def get_embedding(self, text):
-        """Generates embedding using the local Ollama instance."""
+        """Generates embedding using the remote API."""
         try:
-            res = ollama.embeddings(model=EMBED_MODEL, prompt=text)
-            return res["embedding"]
+            data = {
+                "model": EMBED_MODEL,
+                "messages": [{"role": "user", "content": text}],
+                "stream": False
+            }
+            response = requests.post(
+                self.api_url, headers=self.api_headers, json=data, timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+            # The server returns the embedding in the message content for this specific model
+            return result["choices"][0]["message"]["content"]
         except Exception as e:
             self.log("Embedding Error", f"Failed to generate embedding: {str(e)}")
             return None
 
-    def generate_completion(self, messages, max_tokens=512):
-        """Generates completion using Ollama."""
+    def generate_completion(self, messages, model=INTENT_MODEL, temperature=0.1):
+        """Generates completion using the remote API."""
         try:
-            res = ollama.chat(model=self.model_id, messages=messages)
-            return res["message"]["content"].strip()
+            data = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "stream": False
+            }
+            response = requests.post(
+                self.api_url, headers=self.api_headers, json=data, timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+            return result["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            self.log("Generation Error", f"Failed to call Ollama: {str(e)}")
+            self.log("Generation Error", f"Failed to call remote API: {str(e)}")
             return ""
 
     def transform_to_vector_query(self, standard_cypher):
@@ -241,25 +257,20 @@ class GraphRAGPipeline:
             {"role": "user", "content": f"Transform: {standard_cypher}"},
         ]
 
+        raw_text = self.generate_completion(messages, model=TRANSFORM_MODEL)
+        if not raw_text:
+            return standard_cypher, {}
+
+        # Use json_repair to safely load potentially malformed json
         try:
-            data = {"model": "qwen2.5-coder:14b", "messages": messages, "stream": False}
-            response = requests.post(
-                self.api_url, headers=self.api_headers, json=data, timeout=30
-            )
-            response.raise_for_status()
-            result = response.json()
-            raw_text = result["choices"][0]["message"]["content"].strip()
-
-            # Use json_repair to safely load potentially malformed json
             parsed_data = json_repair.loads(raw_text)
-
             transformed_cypher = parsed_data.get("cypher_query", standard_cypher)
             embeddings_map = parsed_data.get("embeddings", {})
 
             self.log("transformation", "AI Transformation successful.")
             return transformed_cypher, embeddings_map
         except Exception as e:
-            self.log("transformation error", f"AI Transformation failed: {str(e)}")
+            self.log("transformation error", f"AI Transformation parsing failed: {str(e)}")
             return standard_cypher, {}
 
     def generate_cypher_query(self, user_query, schema_context):
@@ -306,7 +317,7 @@ Use only the provided relationship types, node labels, and properties from the S
                 return [{"error": str(e)}]
 
     def decide_and_respond(self, user_query, history):
-        """Use Llama2 to decide whether to query the DB or chat directly."""
+        """Determine if a database query is needed or if we can respond directly."""
         self.log("router", "Deciding if DB query is necessary...")
         
         hist_str = ""
@@ -328,24 +339,12 @@ Use only the provided relationship types, node labels, and properties from the S
             {"role": "user", "content": prompt}
         ]
         
-        try:
-            data = {
-                "model": "llama2:7b-chat",
-                "messages": messages,
-                "temperature": 0.4,
-                "stream": False
-            }
-            response = requests.post(self.api_url, headers=self.api_headers, json=data, timeout=30)
-            response.raise_for_status()
-            res = response.json()
-            return res["choices"][0]["message"]["content"].strip()
-        except Exception as e:
-            self.log("Router Error", f"Failed router: {str(e)}")
-            return f"SEARCH: {user_query}"
+        res = self.generate_completion(messages, model=CHAT_MODEL, temperature=0.4)
+        return res if res else f"SEARCH: {user_query}"
             
     def generate_chat_response(self, user_message, cypher_query, final_data, history=None):
-        """Use Llama2:7b-chat to form a conversational reply."""
-        self.log("chat response", "Structuring response with llama2:7b-chat...")
+        """Form a conversational reply based on database results and history."""
+        self.log("chat response", "Structuring response...")
         system_instructions = (
             "You are a helpful AI assistant connected to a specialized Neo4j database. "
             "You govern the conversation. Always greet the user nicely if appropriate. "
@@ -367,22 +366,13 @@ Use only the provided relationship types, node labels, and properties from the S
             {"role": "user", "content": context_str},
         ]
 
-        try:
-            data = {
-                "model": "llama2:7b-chat",
-                "messages": messages,
-                "temperature": 0.3,
-                "stream": False
-            }
-            response = requests.post(self.api_url, headers=self.api_headers, json=data, timeout=30)
-            response.raise_for_status()
-            res = response.json()
-            return res["choices"][0]["message"]["content"].strip()
-        except Exception as e:
-            self.log("Chat Error", f"Failed Llama2-chat structuring: {str(e)}")
-            if len(final_data) > 0 and "error" in final_data[0]:
-                return f"**Database Error:**\n{final_data[0]['error']}\n\n**Generated Cypher:**\n```cypher\n{cypher_query}\n```"
-            return f"**Results:**\n```json\n{json.dumps(final_data, indent=2)}\n```\n\n**Generated Cypher:**\n```cypher\n{cypher_query}\n```"
+        res = self.generate_completion(messages, model=CHAT_MODEL, temperature=0.3)
+        if res:
+            return res
+            
+        if len(final_data) > 0 and "error" in final_data[0]:
+            return f"**Database Error:**\n{final_data[0]['error']}\n\n**Generated Cypher:**\n```cypher\n{cypher_query}\n```"
+        return f"**Results:**\n```json\n{json.dumps(final_data, indent=2)}\n```\n\n**Generated Cypher:**\n```cypher\n{cypher_query}\n```"
 
     def run(self, user_query, history=None):
         context = self.cached_context
@@ -405,14 +395,14 @@ Use only the provided relationship types, node labels, and properties from the S
         standalone_query = decision.replace("SEARCH:", "").replace("`", "").strip()
         self.log("router", f"Standalone DB Query: {standalone_query}")
 
-        # Stage 1: Generate Standard Cypher using Gemma 3, with validation retry
+        # Stage 1: Generate Standard Cypher intent, with validation retry
         self.log("generation", f"Stage 1: Generating standard Cypher intent...")
 
         standard_cypher = ""
         for attempt in range(max_retries):
             standard_cypher = self.generate_cypher_query(standalone_query, context)
             self.log(
-                "generation", f"Gemma Output (Attempt {attempt+1}): {standard_cypher}"
+                "generation", f"Output (Attempt {attempt+1}): {standard_cypher}"
             )
 
             # Syntax validation loop
@@ -492,7 +482,7 @@ Use only the provided relationship types, node labels, and properties from the S
 
         final_data = self.execute_query(cypher_query, params)
 
-        # Formulate Chat Reply with Llama2:7b-chat
+        # Formulate Chat Reply
         chat_reply = self.generate_chat_response(standalone_query, cypher_query, final_data, history)
 
         return {
