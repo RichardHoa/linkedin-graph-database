@@ -21,7 +21,7 @@ DB_NAME = "neo4j"
 
 INTENT_MODEL = "hf.co/mradermacher/text-to-cypher-Gemma-3-27B-Instruct-2025.04.0-i1-GGUF:Q4_K_S"
 TRANSFORM_MODEL = "qwen3-coder:30b"
-CHAT_MODEL = "llama3.3:70b"
+CHAT_MODEL = "gemma3:27b"
 EMBED_MODEL = "mxbai-embed-large"
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
@@ -203,10 +203,25 @@ class GraphRAGPipeline:
 
     def generate_completion(self, messages, model=INTENT_MODEL, temperature=0.1):
         """Generates completion using the remote API."""
+        processed_messages = []
+        system_content = ""
+        for msg in messages:
+            if msg["role"] == "system":
+                system_content += msg["content"] + "\n\n"
+            else:
+                if msg["role"] == "user" and system_content:
+                    processed_messages.append({"role": "user", "content": system_content + msg["content"]})
+                    system_content = ""
+                else:
+                    processed_messages.append(msg)
+        
+        if not processed_messages and system_content:
+             processed_messages.append({"role": "user", "content": system_content})
+
         try:
             data = {
                 "model": model,
-                "messages": messages,
+                "messages": processed_messages,
                 "temperature": temperature,
                 "stream": False
             }
