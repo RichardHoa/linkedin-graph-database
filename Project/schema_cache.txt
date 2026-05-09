@@ -1,0 +1,69 @@
+Node properties:
+- **Professional**
+  - `embedding_summary`: STR Example: "Name: Nguyệt Minh Lê. Summary: Mamadelta Manufactory Vietnam is a family-owned hand-crochet & kni..."
+  - `about`: STR Example: "Mamadelta Manufactory Vietnam is a family-owned hand-crochet & knit swimwear and resortwear manuf..."
+  - `name`: STR Example: "Nguyệt Minh Lê"
+  - `linkedin_id`: STR Example: "lenguyetminh"
+  - `embedding`: LIST Example: "[-0.0231248140335083, -0.0014072833582758904, -0.028747301548719406, 0.00986474845558405, 0.02449..."
+  - `url`: STR Enum values: ['N/A']
+- **Experience**
+  - `end_date`: STR Example: "Sep 2025"
+  - `embedding_summary`: STR Example: "Job: master of ceremonies at freelance. Description: > consult to brainstorm ideas and event/prog..."
+  - `duration_days`: INT Example: "2649"
+  - `description`: STR Example: "> consult to brainstorm ideas and event/program plans.> be mc for various types of events/program..."
+  - `id`: STR Example: "mcphitong_job_3"
+  - `embedding`: LIST Example: "[0.019968047738075256, -0.011005034670233727, -0.027686821296811104, 0.00015985565551090986, -0.0..."
+  - `start_date`: STR Example: "Jun 2018"
+- **Company**
+  - `name`: STR Example: "petrovietnam transportation corporation"
+  - `id`: STR Example: "petrovietnam_transportation_corporation"
+- **University**
+  - `name`: STR Example: "Thai Nguyen university of technology"
+  - `id`: STR Example: "thai_nguyen_university_of_technology"
+- **JobTitle**
+  - `name`: STR Example: "master of ceremonies"
+  - `id`: STR Example: "master_of_ceremonies"
+- **Industry**
+  - `name`: STR Example: "mining of metal ores"
+  - `id`: STR Example: "mining_of_metal_ores"
+- **Education**
+  - `degree_raw`: STR Example: "Bachelor of Economics"
+  - `embedding_summary`: STR Example: "University: University Of Economics Ho Chi Minh City. Degree: Bachelor of Economics. Major: Human..."
+  - `major_raw`: STR Example: "Human Resources Management"
+  - `description`: STR Example: "GPA: 8,31/10 (Distinction)"
+  - `embedding`: LIST Example: "[-0.027800749987363815, 0.00277140480466187, 0.0011198247084394097, -0.013445825316011906, -0.037..."
+  - `id`: STR Example: "mcphitong_university_of_economics_ho_chi_minh_city_Jan 2015"
+- **Degree**
+  - `id`: STR Enum values: ['architect', 'bachelor', 'college', 'engineer', 'high_school', 'master', 'none', 'phd']
+- **Major**
+  - `name`: STR Example: "mining engineering"
+  - `id`: STR Example: "mining_engineering"
+- **Certification**
+  - `embedding_summary`: STR Example: "Certification: AI WorkSmart - Boosting Work Perfomance. Issued by: FPT School of Business & Techn..."
+  - `issued_date`: STR Example: "Jun 2025"
+  - `meta`: STR Example: "Issued Jun 2025"
+  - `subtitle`: STR Example: "FPT School of Business & Technology (FSB)"
+  - `id`: STR Example: "mcphitong_cert_0"
+  - `embedding`: LIST Example: "[-0.007640436291694641, 0.004158159717917442, -0.005931350402534008, 0.015475506894290447, 0.0099..."
+  - `title`: STR Example: "AI WorkSmart - Boosting Work Perfomance"
+
+The relationships:
+(:Professional)-[:CURRENT_INDUSTRY]->(:Industry)
+(:Professional)-[:FIRST_INDUSTRY]->(:Industry)
+(:Professional)-[:HAS_EXPERIENCE]->(:Experience)
+(:Experience)-[:AT_COMPANY]->(:Company)
+(:Experience)-[:ROLE_WAS]->(:JobTitle)
+(:Professional)-[:HAS_EDUCATION]->(:Education)
+(:Education)-[:AT_UNIVERSITY]->(:University)
+(:Education)-[:FOR_DEGREE]->(:Degree)
+(:Education)-[:IN_MAJOR]->(:Major)
+(:Professional)-[:HAS_CERTIFICATION]->(:Certification)
+(:Experience)-[:HAPPENED_DURING]->(:Experience)
+(:Experience)-[:FOLLOWED_BY]->(:Experience)
+(:Experience)-[:PITCHED_INTO]->(:Experience)
+
+Available Vector Indexes:
+Vector Index: `certification_embeddings` on Label `Certification`
+Vector Index: `education_embeddings` on Label `Education`
+Vector Index: `experience_embeddings` on Label `Experience`
+Vector Index: `professional_embeddings` on Label `Professional`
