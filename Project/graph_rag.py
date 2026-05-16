@@ -225,6 +225,7 @@ class GraphRAGPipeline:
                 "temperature": temperature,
                 "stream": False
             }
+            print(data)
             response = requests.post(
                 self.api_url, headers=self.api_headers, json=data, timeout=30
             )
