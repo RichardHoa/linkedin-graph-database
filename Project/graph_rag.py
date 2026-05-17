@@ -12,6 +12,7 @@ sys.path.append("CyVer")
 from CyVer import SyntaxValidator, SchemaValidator, PropertiesValidator
 import json_repair
 import requests
+import ollama
 
 load_dotenv()
 
@@ -190,20 +191,10 @@ class GraphRAGPipeline:
         return schema_context
 
     def get_embedding(self, text):
-        """Generates embedding using the remote API."""
+        """Generates embedding using local Ollama."""
         try:
-            data = {
-                "model": EMBED_MODEL,
-                "messages": [{"role": "user", "content": text}],
-                "stream": False
-            }
-            response = requests.post(
-                self.api_url, headers=self.api_headers, json=data, timeout=30
-            )
-            response.raise_for_status()
-            result = response.json()
-            # The server returns the embedding in the message content for this specific model
-            return result["choices"][0]["message"]["content"]
+            res = ollama.embeddings(model=EMBED_MODEL, prompt=text)
+            return res["embedding"]
         except Exception as e:
             self.log("Embedding Error", f"Failed to generate embedding: {str(e)}")
             return None
