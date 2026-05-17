@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dataset Structure Overview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #fafaf8; color: #1a1a18;
+    line-height: 1.6; font-size: 16px;
+  }
+
+  .skip-link {
+    position: absolute; top: -48px; left: 16px;
+    background: #534ab7; color: #fff;
+    padding: 8px 18px; border-radius: 0 0 8px 8px;
+    font-weight: 700; font-size: 0.875em;
+    text-decoration: none; z-index: 9999;
+    transition: top 0.15s ease;
+  }
+  .skip-link:focus { top: 0; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+
+  .container { max-width: 80%; margin: 0 auto; padding: 0 24px; }
+
+  .page-header {
+    padding: 52px 0 36px;
+    border-bottom: 0.5px solid #d3d1c7;
+    margin-bottom: 36px;
+  }
+  h1 {
+    font-size: 2em; font-weight: 500; color: #1a1a18;
+    margin-bottom: 10px; letter-spacing: -0.01em;
+  }
+  .subtitle { color: #888780; font-size: 0.95em; }
+  .subtitle span + span::before { content: " · "; color: #d3d1c7; padding: 0 2px; }
+
+  .col-card {
+    background: #fff; border: 0.5px solid #d3d1c7;
+    border-radius: 12px; padding: 24px 28px; margin-bottom: 24px;
+  }
+  .col-header {
+    display: flex; align-items: center; gap: 12px;
+    padding-bottom: 18px; border-bottom: 0.5px solid #ececea;
+    margin-bottom: 18px;
+  }
+  h2 { font-size: 1.15em; font-weight: 600; color: #1a1a18; letter-spacing: -0.01em; }
+  h3 {
+    font-size: 0.7em; font-weight: 700; color: #888780;
+    text-transform: uppercase; letter-spacing: 0.09em; margin: 24px 0 10px;
+  }
+
+  .metrics {
+    display: flex; flex-wrap: wrap;
+    background: #f9f9f7; border: 0.5px solid #d3d1c7;
+    border-radius: 8px; overflow: hidden;
+  }
+  .metric { padding: 14px 22px; border-right: 0.5px solid #d3d1c7; min-width: 160px; }
+  .metric:last-child { border-right: none; }
+  .metric dt {
+    font-size: 0.68em; font-weight: 700; color: #888780;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;
+  }
+  .metric dd { margin: 0; }
+
+  .badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.78em; font-weight: 700; line-height: 1.4; }
+  .badge-success { background: #eaf3de; color: #3b6d11; }
+  .badge-info    { background: #e6f1fb; color: #185fa5; }
+  .badge-warning { background: #faeeda; color: #854f0b; }
+  .badge-danger  { background: #fcebeb; color: #a32d2d; }
+  .badge-neutral { background: #f1efe8; color: #5f5e5a; }
+
+  .pill-type {
+    display: inline-block; background: #eeedfe; color: #534ab7;
+    font-size: 0.72em; padding: 3px 12px; border-radius: 20px; font-weight: 700;
+  }
+  .pill-mandatory {
+    display: inline-block; background: #534ab7; color: #eeedfe;
+    font-size: 0.68em; padding: 1px 8px; border-radius: 20px;
+    font-weight: 700; vertical-align: middle; margin-left: 8px;
+  }
+
+  .tag-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag, .tag-sm {
+    display: inline-block; background: #e6f1fb; color: #185fa5;
+    border: 0.5px solid #b5d4f4; padding: 3px 10px; border-radius: 4px; font-size: 0.78em;
+  }
+  .tag-sm { font-size: 0.72em; padding: 2px 8px; }
+
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 0.5px solid #d3d1c7; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84em; }
+  thead tr { background: #2c2c2a; }
+  thead th { padding: 10px 16px; color: #f1efe8; font-weight: 500; text-align: left; white-space: nowrap; }
+  tbody th { padding: 9px 16px; font-weight: 600; text-align: left; vertical-align: top; }
+  tbody td { padding: 9px 16px; vertical-align: top; }
+  .row-mandatory { background: #eeedfe; }
+  .row-mandatory th, .row-mandatory td { color: #3c3489; border-bottom: 0.5px solid #afa9ec; }
+  .row-even { background: #fff; }
+  .row-even th, .row-even td { border-bottom: 0.5px solid #e8e7e4; color: #1a1a18; }
+  .row-odd  { background: #f9f9f8; }
+  .row-odd th, .row-odd td { border-bottom: 0.5px solid #e8e7e4; color: #1a1a18; }
+  .center { text-align: center; }
+
+  code, pre { font-family: 'DM Mono', 'Fira Code', ui-monospace, monospace; }
+  .inline-code { background: #f1efe8; color: #2c2c2a; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; }
+  .code-light { background: #f1efe8; color: #2c2c2a; padding: 10px 14px; border-radius: 8px; font-size: 0.78em; overflow-x: auto; line-height: 1.5; margin: 0; }
+  .code-dark  { background: #2c2c2a; color: #d3d1c7; padding: 18px 22px; border-radius: 10px; font-size: 0.8em; overflow-x: auto; line-height: 1.65; margin: 0; }
+
+  .muted { color: #888780; font-style: italic; }
+
+  .page-footer {
+    text-align: center; color: #b4b2a9; font-size: 0.78em;
+    padding: 36px 0 28px; border-top: 0.5px solid #d3d1c7; margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <div class="container">
+    <header class="page-header">
+      <h1>Dataset structure overview</h1>
+      <p class="subtitle">
+        <span>3,043 records</span>
+        <span>20 columns</span>
+      </p>
+    </header>
+
+    <main id="main">
+      
+      <article class="col-card" aria-labelledby="col-0">
+        <header class="col-header">
+          <h2 id="col-0">id</h2>
+          <span class="pill-type" aria-label="Type: scalar_text">scalar_text</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for id">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="3,043 unique values">3,043</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><code class="inline-code">khiem-tran-84a0441b9</code></dd>
+          </div>
+        </dl>
+        
+      </article>
+
+      <article class="col-card" aria-labelledby="col-1">
+        <header class="col-header">
+          <h2 id="col-1">first_industry</h2>
+          <span class="pill-type" aria-label="Type: scalar_text">scalar_text</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for first_industry">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-info" aria-label="Presence: 97.11% — high">97.11%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="54 unique values">54</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><code class="inline-code">employment activities</code></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Unique values for column first_industry">
+          <h3>Unique values</h3>
+          <ul class="tag-list" aria-label="54 unique values"><li><span class="tag">manufacture of food products</span></li><li><span class="tag">printing and reproduction of recorded media</span></li><li><span class="tag">gambling and betting activities</span></li><li><span class="tag">repair of computers and personal and household goods</span></li><li><span class="tag">creative, arts and entertainment activities</span></li><li><span class="tag">real estate activities</span></li><li><span class="tag">civil engineering</span></li><li><span class="tag">manufacture of wearing apparel</span></li><li><span class="tag">retail trade</span></li><li><span class="tag">activities of membership organizations</span></li><li><span class="tag">computer programming, consultancy and related activities</span></li><li><span class="tag">radio broadcasting, television programming and broadcasting activities</span></li><li><span class="tag">architectural and engineering activities; technical testing and analysis</span></li><li><span class="tag">employment activities</span></li><li><span class="tag">human health activities</span></li><li><span class="tag">travel agency, tour operator, reservation service and related activities</span></li><li><span class="tag">mining of metal ores</span></li><li><span class="tag">motion picture, video and television programme production, sound recording and music publishing activities</span></li><li><span class="tag">advertising and market research</span></li><li><span class="tag">warehousing and support activities for transportation</span></li><li><span class="tag">information service activities</span></li><li><span class="tag">unknown</span></li><li><span class="tag">agriculture and agriculture related services activities</span></li><li><span class="tag">manufacture of basic metals</span></li><li><span class="tag">other professional, scientific and technical activities, specialized design, photographic, translation</span></li><li><span class="tag">accommodation</span></li><li><span class="tag">libraries, archives, museums and other cultural activities</span></li><li><span class="tag">social work activities without accommodation</span></li><li><span class="tag">food and beverage service activities</span></li><li><span class="tag">activities of head offices; management consultancy activities</span></li><li><span class="tag">sports activities and amusement and recreation activities</span></li><li><span class="tag">services to buildings and landscape activities</span></li><li><span class="tag">manufacture of computer, electronic and optical products</span></li><li><span class="tag">air transport</span></li><li><span class="tag">manufacture of furniture</span></li><li><span class="tag">wholesale</span></li><li><span class="tag">security and investigation activities</span></li><li><span class="tag">other personal service activities - washing, hairdressing, funeral and related activities</span></li><li><span class="tag">public administration and defence; compulsory social security; foreign affairs</span></li><li><span class="tag">office administrative, office support and other business support activities</span></li><li><span class="tag">scientific research and experimental development</span></li><li><span class="tag">education</span></li><li><span class="tag">repair and installation of machinery and equipment</span></li><li><span class="tag">manufacture of pharmaceuticals, medicinal chemical and botanical products</span></li><li><span class="tag">mining support service activities</span></li><li><span class="tag">financial service activities, except insurance and pension funding</span></li><li><span class="tag">legal and accounting activities</span></li><li><span class="tag">telecommunications</span></li><li><span class="tag">construction of buildings</span></li><li><span class="tag">activities auxiliary to financial service and insurance activities</span></li><li><span class="tag">activities of extraterritorial organizations and bodies</span></li><li><span class="tag">remediation activities and other waste management services</span></li><li><span class="tag">publishing activities</span></li><li><span class="tag">manufacture of electrical equipment</span></li></ul>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-2">
+        <header class="col-header">
+          <h2 id="col-2">current_industry</h2>
+          <span class="pill-type" aria-label="Type: scalar_text">scalar_text</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for current_industry">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-warning" aria-label="Presence: 68.42% — partial">68.42%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="50 unique values">50</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><code class="inline-code">advertising and market research</code></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Unique values for column current_industry">
+          <h3>Unique values</h3>
+          <ul class="tag-list" aria-label="50 unique values"><li><span class="tag">manufacture of food products</span></li><li><span class="tag">printing and reproduction of recorded media</span></li><li><span class="tag">repair of computers and personal and household goods</span></li><li><span class="tag">creative, arts and entertainment activities</span></li><li><span class="tag">real estate activities</span></li><li><span class="tag">civil engineering</span></li><li><span class="tag">manufacture of wearing apparel</span></li><li><span class="tag">rental and leasing activities</span></li><li><span class="tag">retail trade</span></li><li><span class="tag">architectural and engineering activities; technical testing and analysis</span></li><li><span class="tag">computer programming, consultancy and related activities</span></li><li><span class="tag">activities of membership organizations</span></li><li><span class="tag">radio broadcasting, television programming and broadcasting activities</span></li><li><span class="tag">human health activities</span></li><li><span class="tag">employment activities</span></li><li><span class="tag">travel agency, tour operator, reservation service and related activities</span></li><li><span class="tag">motion picture, video and television programme production, sound recording and music publishing activities</span></li><li><span class="tag">advertising and market research</span></li><li><span class="tag">warehousing and support activities for transportation</span></li><li><span class="tag">unknown</span></li><li><span class="tag">information service activities</span></li><li><span class="tag">water transport</span></li><li><span class="tag">other professional, scientific and technical activities, specialized design, photographic, translation</span></li><li><span class="tag">accommodation</span></li><li><span class="tag">libraries, archives, museums and other cultural activities</span></li><li><span class="tag">food and beverage service activities</span></li><li><span class="tag">activities of head offices; management consultancy activities</span></li><li><span class="tag">sports activities and amusement and recreation activities</span></li><li><span class="tag">manufacture of computer, electronic and optical products</span></li><li><span class="tag">air transport</span></li><li><span class="tag">manufacture of furniture</span></li><li><span class="tag">wholesale</span></li><li><span class="tag">security and investigation activities</span></li><li><span class="tag">public administration and defence; compulsory social security; foreign affairs</span></li><li><span class="tag">electricity, gas, steam and air conditioning supply</span></li><li><span class="tag">office administrative, office support and other business support activities</span></li><li><span class="tag">scientific research and experimental development</span></li><li><span class="tag">manufacture of coke and refined petroleum products</span></li><li><span class="tag">education</span></li><li><span class="tag">manufacture of pharmaceuticals, medicinal chemical and botanical products</span></li><li><span class="tag">mining support service activities</span></li><li><span class="tag">financial service activities, except insurance and pension funding</span></li><li><span class="tag">legal and accounting activities</span></li><li><span class="tag">construction of buildings</span></li><li><span class="tag">telecommunications</span></li><li><span class="tag">activities auxiliary to financial service and insurance activities</span></li><li><span class="tag">activities of extraterritorial organizations and bodies</span></li><li><span class="tag">remediation activities and other waste management services</span></li><li><span class="tag">publishing activities</span></li><li><span class="tag">manufacture of electrical equipment</span></li></ul>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-3">
+        <header class="col-header">
+          <h2 id="col-3">educations</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for educations">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column educations">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column educations">
+              <caption class="sr-only">Nested schema fields for column educations</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-even">
+                <th scope="row">degree_user_input<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 94.47724% — high">94.47724%</span></td>
+                <td class="center">667</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">degree_standardized<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 94.49629% — high">94.49629%</span></td>
+                <td class="center">7</td>
+                <td><ul class="tag-list" aria-label="7 unique values"><li><span class="tag tag-sm">architect</span></li><li><span class="tag tag-sm">phd</span></li><li><span class="tag tag-sm">bachelor</span></li><li><span class="tag tag-sm">college</span></li><li><span class="tag tag-sm">engineer</span></li><li><span class="tag tag-sm">master</span></li><li><span class="tag tag-sm">high school</span></li></ul></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">university <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">929</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">major_user_input<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-warning" aria-label="Presence: 78.67073% — partial">78.67073%</span></td>
+                <td class="center">821</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-even">
+                <th scope="row">major_standardized<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-warning" aria-label="Presence: 78.67073% — partial">78.67073%</span></td>
+                <td class="center">62</td>
+                <td><ul class="tag-list" aria-label="62 unique values"><li><span class="tag tag-sm">tourism</span></li><li><span class="tag tag-sm">fine arts</span></li><li><span class="tag tag-sm">nutrition</span></li><li><span class="tag tag-sm">printing engineering technology</span></li><li><span class="tag tag-sm">library and information sciences</span></li><li><span class="tag tag-sm">transportation operations</span></li><li><span class="tag tag-sm">engineering physics</span></li><li><span class="tag tag-sm">accounting, auditing</span></li><li><span class="tag tag-sm">vietnamese language, literature and culture</span></li><li><span class="tag tag-sm">journalism and communication</span></li><li><span class="tag tag-sm">archival science and museology</span></li><li><span class="tag tag-sm">law</span></li><li><span class="tag tag-sm">civil engineering</span></li><li><span class="tag tag-sm">statistics</span></li><li><span class="tag tag-sm">sociology and anthropology</span></li><li><span class="tag tag-sm">other social sciences and humanities</span></li><li><span class="tag tag-sm">mechanical engineering and mechatronics</span></li><li><span class="tag tag-sm">construction management</span></li><li><span class="tag tag-sm">biology</span></li><li><span class="tag tag-sm">audiovisual arts</span></li><li><span class="tag tag-sm">applied biology</span></li><li><span class="tag tag-sm">hospitality and restaurant services</span></li><li><span class="tag tag-sm">psychology</span></li><li><span class="tag tag-sm">earth sciences</span></li><li><span class="tag tag-sm">architectural engineering and construction technology</span></li><li><span class="tag tag-sm">nursing and midwifery</span></li><li><span class="tag tag-sm">food and beverage processing</span></li><li><span class="tag tag-sm">physical sciences</span></li><li><span class="tag tag-sm">home economics</span></li><li><span class="tag tag-sm">teacher education</span></li><li><span class="tag tag-sm">textile, fabrics, footwear and leather production and processing</span></li><li><span class="tag tag-sm">finance, banking, insurance</span></li><li><span class="tag tag-sm">management, administration</span></li><li><span class="tag tag-sm">area studies</span></li><li><span class="tag tag-sm">economics</span></li><li><span class="tag tag-sm">industrial management</span></li><li><span class="tag tag-sm">healthcare management</span></li><li><span class="tag tag-sm">architecture and planning</span></li><li><span class="tag tag-sm">environmental and resource management</span></li><li><span class="tag tag-sm">education sciences</span></li><li><span class="tag tag-sm">environmental science</span></li><li><span class="tag tag-sm">agriculture</span></li><li><span class="tag tag-sm">mathematics</span></li><li><span class="tag tag-sm">electrical, electronic and telecommunication engineering technology</span></li><li><span class="tag tag-sm">publishing and distribution</span></li><li><span class="tag tag-sm">geography</span></li><li><span class="tag tag-sm">foreign languages, literatures and cultures</span></li><li><span class="tag tag-sm">applied arts</span></li><li><span class="tag tag-sm">police</span></li><li><span class="tag tag-sm">physical education and sports</span></li><li><span class="tag tag-sm">public health</span></li><li><span class="tag tag-sm">chemical, materials, metallurgical and environmental engineering</span></li><li><span class="tag tag-sm">performing arts</span></li><li><span class="tag tag-sm">mechanical engineering technology</span></li><li><span class="tag tag-sm">information technology</span></li><li><span class="tag tag-sm">social work</span></li><li><span class="tag tag-sm">business</span></li><li><span class="tag tag-sm">occupational safety and industrial hygiene services</span></li><li><span class="tag tag-sm">pharmacy</span></li><li><span class="tag tag-sm">political science</span></li><li><span class="tag tag-sm">veterinary medicine</span></li><li><span class="tag tag-sm">computer science</span></li></ul></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">description<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-danger" aria-label="Presence: 31.84155% — low">31.84155%</span></td>
+                <td class="center">1,634</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-even">
+                <th scope="row">start_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 97.96229% — high">97.96229%</span></td>
+                <td class="center">29</td>
+                <td><ul class="tag-list" aria-label="29 unique values"><li><span class="tag tag-sm">Jan 2012</span></li><li><span class="tag tag-sm">Jan 2007</span></li><li><span class="tag tag-sm">Jan 2006</span></li><li><span class="tag tag-sm">Jan 2018</span></li><li><span class="tag tag-sm">Jan 2017</span></li><li><span class="tag tag-sm">Jan 2010</span></li><li><span class="tag tag-sm">Jan 2019</span></li><li><span class="tag tag-sm">Jan 2004</span></li><li><span class="tag tag-sm">Jan 1999</span></li><li><span class="tag tag-sm">Jan 2001</span></li><li><span class="tag tag-sm">Jan 2005</span></li><li><span class="tag tag-sm">Jan 2003</span></li><li><span class="tag tag-sm">Jan 2002</span></li><li><span class="tag tag-sm">Jan 2024</span></li><li><span class="tag tag-sm">Jan 2011</span></li><li><span class="tag tag-sm">Jan 2014</span></li><li><span class="tag tag-sm">Jan 2008</span></li><li><span class="tag tag-sm">Jan 2021</span></li><li><span class="tag tag-sm">Jan 1994</span></li><li><span class="tag tag-sm">Jan 2023</span></li><li><span class="tag tag-sm">Jan 2022</span></li><li><span class="tag tag-sm">Jan 2000</span></li><li><span class="tag tag-sm">Jan 2015</span></li><li><span class="tag tag-sm">Jan 1997</span></li><li><span class="tag tag-sm">Jan 2016</span></li><li><span class="tag tag-sm">Jan 2025</span></li><li><span class="tag tag-sm">Jan 2013</span></li><li><span class="tag tag-sm">Jan 2020</span></li><li><span class="tag tag-sm">Jan 2009</span></li></ul></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">end_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 96.05789% — high">96.05789%</span></td>
+                <td class="center">30</td>
+                <td><ul class="tag-list" aria-label="30 unique values"><li><span class="tag tag-sm">1997-01-01</span></li><li><span class="tag tag-sm">2027-01-01</span></li><li><span class="tag tag-sm">2033-01-01</span></li><li><span class="tag tag-sm">2030-01-01</span></li><li><span class="tag tag-sm">2029-01-01</span></li><li><span class="tag tag-sm">2011-01-01</span></li><li><span class="tag tag-sm">2025-01-01</span></li><li><span class="tag tag-sm">2023-01-01</span></li><li><span class="tag tag-sm">2001-01-01</span></li><li><span class="tag tag-sm">2034-01-01</span></li><li><span class="tag tag-sm">2024-01-01</span></li><li><span class="tag tag-sm">2017-01-01</span></li><li><span class="tag tag-sm">2020-01-01</span></li><li><span class="tag tag-sm">2012-01-01</span></li><li><span class="tag tag-sm">2018-01-01</span></li><li><span class="tag tag-sm">2021-01-01</span></li><li><span class="tag tag-sm">2016-01-01</span></li><li><span class="tag tag-sm">2028-01-01</span></li><li><span class="tag tag-sm">2013-01-01</span></li><li><span class="tag tag-sm">2004-01-01</span></li><li><span class="tag tag-sm">2002-01-01</span></li><li><span class="tag tag-sm">2003-01-01</span></li><li><span class="tag tag-sm">2015-01-01</span></li><li><span class="tag tag-sm">2019-01-01</span></li><li><span class="tag tag-sm">2010-01-01</span></li><li><span class="tag tag-sm">2022-01-01</span></li><li><span class="tag tag-sm">2008-01-01</span></li><li><span class="tag tag-sm">2026-01-01</span></li><li><span class="tag tag-sm">2014-01-01</span></li><li><span class="tag tag-sm">2009-01-01</span></li></ul></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column educations">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;degree_user_input&quot;: &quot;Bachelor's degree&quot;,
+  &quot;degree_standardized&quot;: &quot;bachelor&quot;,
+  &quot;university&quot;: &quot;RMIT University Vietnam&quot;,
+  &quot;major_user_input&quot;: &quot;Digital Marketing&quot;,
+  &quot;major_standardized&quot;: &quot;business&quot;,
+  &quot;description&quot;: &quot;RMIT Vietnam is a Melbourne-based first fully-foreign university in Vietnam, bringing a world-class education and globalised study environment to the heart of Asia. In 2025, RMIT ranked 10th highest ranked in Australia and 123rd in the world according to QS World University Rankings. - Minor: Logistics and Supply Chain Management - Received Distinction and High Distinction in core courses: Digital Marketing Communication, Digital Content Creation, Social Media &amp; Mobile Marketing… Show more&quot;,
+  &quot;start_date&quot;: &quot;Jan 2021&quot;,
+  &quot;end_date&quot;: &quot;2025-01-01&quot;
+}</pre>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-4">
+        <header class="col-header">
+          <h2 id="col-4">jobs</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for jobs">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column jobs">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column jobs">
+              <caption class="sr-only">Nested schema fields for column jobs</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-mandatory">
+                <th scope="row">title <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">6,472</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">company <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">5,658</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">industry_user_input <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">1,899</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">industry_standardized <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">72</td>
+                <td><ul class="tag-list" aria-label="72 unique values"><li><span class="tag tag-sm">manufacture of food products</span></li><li><span class="tag tag-sm">printing and reproduction of recorded media</span></li><li><span class="tag tag-sm">residential care activities</span></li><li><span class="tag tag-sm">manufacture of beverages</span></li><li><span class="tag tag-sm">waste collection, treatment and disposal activities; materials recovery</span></li><li><span class="tag tag-sm">gambling and betting activities</span></li><li><span class="tag tag-sm">repair of computers and personal and household goods</span></li><li><span class="tag tag-sm">creative, arts and entertainment activities</span></li><li><span class="tag tag-sm">mining of metal ores</span></li><li><span class="tag tag-sm">real estate activities</span></li><li><span class="tag tag-sm">civil engineering</span></li><li><span class="tag tag-sm">activities of households as employers of domestic personnel</span></li><li><span class="tag tag-sm">manufacture of wearing apparel</span></li><li><span class="tag tag-sm">rental and leasing activities</span></li><li><span class="tag tag-sm">retail trade</span></li><li><span class="tag tag-sm">activities of membership organizations</span></li><li><span class="tag tag-sm">computer programming, consultancy and related activities</span></li><li><span class="tag tag-sm">radio broadcasting, television programming and broadcasting activities</span></li><li><span class="tag tag-sm">architectural and engineering activities; technical testing and analysis</span></li><li><span class="tag tag-sm">employment activities</span></li><li><span class="tag tag-sm">human health activities</span></li><li><span class="tag tag-sm">manufacture of basic metals</span></li><li><span class="tag tag-sm">travel agency, tour operator, reservation service and related activities</span></li><li><span class="tag tag-sm">motion picture, video and television programme production, sound recording and music publishing activities</span></li><li><span class="tag tag-sm">advertising and market research</span></li><li><span class="tag tag-sm">warehousing and support activities for transportation</span></li><li><span class="tag tag-sm">information service activities</span></li><li><span class="tag tag-sm">unknown</span></li><li><span class="tag tag-sm">agriculture and agriculture related services activities</span></li><li><span class="tag tag-sm">water transport</span></li><li><span class="tag tag-sm">other professional, scientific and technical activities, specialized design, photographic, translation</span></li><li><span class="tag tag-sm">accommodation</span></li><li><span class="tag tag-sm">libraries, archives, museums and other cultural activities</span></li><li><span class="tag tag-sm">social work activities without accommodation</span></li><li><span class="tag tag-sm">fishing and aquaculture</span></li><li><span class="tag tag-sm">food and beverage service activities</span></li><li><span class="tag tag-sm">extraction of crude petroleum and natural gas</span></li><li><span class="tag tag-sm">activities of head offices; management consultancy activities</span></li><li><span class="tag tag-sm">sports activities and amusement and recreation activities</span></li><li><span class="tag tag-sm">manufacture of machinery and equipment n.e.c.</span></li><li><span class="tag tag-sm">services to buildings and landscape activities</span></li><li><span class="tag tag-sm">manufacture of computer, electronic and optical products</span></li><li><span class="tag tag-sm">air transport</span></li><li><span class="tag tag-sm">manufacture of furniture</span></li><li><span class="tag tag-sm">postal and courier activities</span></li><li><span class="tag tag-sm">wholesale</span></li><li><span class="tag tag-sm">security and investigation activities</span></li><li><span class="tag tag-sm">water collection, treatment and supply</span></li><li><span class="tag tag-sm">other personal service activities - washing, hairdressing, funeral and related activities</span></li><li><span class="tag tag-sm">manufacture of rubber and plastics products</span></li><li><span class="tag tag-sm">public administration and defence; compulsory social security; foreign affairs</span></li><li><span class="tag tag-sm">electricity, gas, steam and air conditioning supply</span></li><li><span class="tag tag-sm">scientific research and experimental development</span></li><li><span class="tag tag-sm">office administrative, office support and other business support activities</span></li><li><span class="tag tag-sm">manufacture of coke and refined petroleum products</span></li><li><span class="tag tag-sm">education</span></li><li><span class="tag tag-sm">veterinary activities</span></li><li><span class="tag tag-sm">manufacture of motor vehicles, trailers and semi-trailers</span></li><li><span class="tag tag-sm">repair and installation of machinery and equipment</span></li><li><span class="tag tag-sm">manufacture of pharmaceuticals, medicinal chemical and botanical products</span></li><li><span class="tag tag-sm">mining support service activities</span></li><li><span class="tag tag-sm">manufacture of textiles</span></li><li><span class="tag tag-sm">financial service activities, except insurance and pension funding</span></li><li><span class="tag tag-sm">legal and accounting activities</span></li><li><span class="tag tag-sm">telecommunications</span></li><li><span class="tag tag-sm">construction of buildings</span></li><li><span class="tag tag-sm">activities auxiliary to financial service and insurance activities</span></li><li><span class="tag tag-sm">activities of extraterritorial organizations and bodies</span></li><li><span class="tag tag-sm">remediation activities and other waste management services</span></li><li><span class="tag tag-sm">publishing activities</span></li><li><span class="tag tag-sm">forestry and forestry related services activities</span></li><li><span class="tag tag-sm">manufacture of electrical equipment</span></li></ul></td>
+              </tr>
+              <tr class="row-even">
+                <th scope="row">description<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-warning" aria-label="Presence: 57.15574% — partial">57.15574%</span></td>
+                <td class="center">7,583</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">start_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 99.84224% — high">99.84224%</span></td>
+                <td class="center">184</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-even">
+                <th scope="row">end_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 99.84224% — high">99.84224%</span></td>
+                <td class="center">170</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">skillset <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">10,365</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column jobs">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;title&quot;: &quot;marketing assistant intern&quot;,
+  &quot;company&quot;: &quot;asics&quot;,
+  &quot;industry_user_input&quot;: &quot;marketing and advertising&quot;,
+  &quot;industry_standardized&quot;: &quot;advertising and market research&quot;,
+  &quot;description&quot;: &quot;asics has been developing sports footwear and apparel for more than 76 years. innovation has been the key to the introduction of design philosophies that have revolutionised the world of sports. through scientific approaches, asics have strived to create highly innovative sports product solutions that customers rely upon.responsibilities:- manage organic social content, website content, emails...for brand owned channels.- update website marketing page follow brand guidelines- ensure alignment with social media, brand campaign and event with stakeholders- assist with the development of social content for social, website content, event activation...- adapt and assist with digital graphic design- report in weekly &amp; monthly basis, campaign &amp; project basis- support other marketing activities&quot;,
+  &quot;start_date&quot;: &quot;May 2025&quot;,
+  &quot;end_date&quot;: &quot;Sep 2025&quot;,
+  &quot;skillset&quot;: [
+    &quot;organic social content management, website content management, email marketing, content writing, social media planning, digital graphic design, reporting, campaign management, project management, marketing coordination&quot;
+  ]
+}</pre>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-5">
+        <header class="col-header">
+          <h2 id="col-5">name</h2>
+          <span class="pill-type" aria-label="Type: scalar_text">scalar_text</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for name">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="2,635 unique values">2,635</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><code class="inline-code">Khiem Tran</code></dd>
+          </div>
+        </dl>
+        
+      </article>
+
+      <article class="col-card" aria-labelledby="col-6">
+        <header class="col-header">
+          <h2 id="col-6">city</h2>
+          <span class="pill-type" aria-label="Type: scalar_text">scalar_text</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for city">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="88 unique values">88</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><code class="inline-code">Ho Chi Minh City, Ho Chi Minh City, Vietnam</code></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Unique values for column city">
+          <h3>Unique values</h3>
+          <ul class="tag-list" aria-label="88 unique values"><li><span class="tag">Tân Bình, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">District 10, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Huyện Văn Lâm, Hung Yen, Vietnam</span></li><li><span class="tag">Hue, Thua Thien Hue, Vietnam</span></li><li><span class="tag">Thanh Xuân district, Hanoi, Vietnam</span></li><li><span class="tag">District 3, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Tây Hồ district, Hanoi, Vietnam</span></li><li><span class="tag">Quận Nam Từ Liêm, Hanoi, Vietnam</span></li><li><span class="tag">Ho Chi Minh City Metropolitan Area</span></li><li><span class="tag">District 2, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Binh Duong, Vietnam</span></li><li><span class="tag">Củ Chi, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Ho Chi Minh City, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Hue, Vietnam</span></li><li><span class="tag">Dong Thap, Vietnam</span></li><li><span class="tag">Quận Cầu Giấy, Hanoi, Vietnam</span></li><li><span class="tag">District 12, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Đà Nang, Da Nang City, Vietnam</span></li><li><span class="tag">Hai Phong City, Vietnam</span></li><li><span class="tag">Quận Gò Vấp, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Da Nang Metropolitan Area</span></li><li><span class="tag">Phường 6, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Thu Đuc, Vietnam</span></li><li><span class="tag">My Dinh 1 Ward, Hanoi, Vietnam</span></li><li><span class="tag">Phu Nhuan, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Thành Phố Vũng Tàu, Ba Ria-Vung Tau, Vietnam</span></li><li><span class="tag">Bình Chánh district, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Hoi An, Quang Nam, Vietnam</span></li><li><span class="tag">District 1, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Binh Tho Ward, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">District 8, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Da Nang City, Vietnam</span></li><li><span class="tag">Phường Thảo Điền, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Quận 12, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Hà Đông district, Hanoi, Vietnam</span></li><li><span class="tag">Hoàn Kiếm district, Hanoi, Vietnam</span></li><li><span class="tag">Hai Bà Trưng district, Hanoi, Vietnam</span></li><li><span class="tag">District 7, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Hoan Kiem, Hanoi, Vietnam</span></li><li><span class="tag">Quận 3, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Tân Phú, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Thuận An, Binh Duong, Vietnam</span></li><li><span class="tag">Vietnam</span></li><li><span class="tag">Thành Phố Bắc Ninh, Bac Ninh, Vietnam</span></li><li><span class="tag">Nhà Bè, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Quận 7, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Ninh Thuan, Vietnam</span></li><li><span class="tag">Kien Giang, Vietnam</span></li><li><span class="tag">Đống Đa district, Hanoi, Vietnam</span></li><li><span class="tag">Quang Ninh, Vietnam</span></li><li><span class="tag">Ba Đình district, Hanoi, Vietnam</span></li><li><span class="tag">Haiphong, Hai Phong City, Vietnam</span></li><li><span class="tag">Nha Trang, Khanh Hoa, Vietnam</span></li><li><span class="tag">Thanh Hoa, Thanh Hoa, Vietnam</span></li><li><span class="tag">Vung Tau, Ba Ria-Vung Tau, Vietnam</span></li><li><span class="tag">Quận 4, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Quận Bình Tân, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Thủ Đức, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Biên Hòa, Dong Nai, Vietnam</span></li><li><span class="tag">Quang Tri, Vietnam</span></li><li><span class="tag">Hanoi Capital Region</span></li><li><span class="tag">Ha Long, Quang Ninh, Vietnam</span></li><li><span class="tag">Bến Lức district, Long An, Vietnam</span></li><li><span class="tag">Vinh, Nghe An, Vietnam</span></li><li><span class="tag">Hoàng Mai district, Hanoi, Vietnam</span></li><li><span class="tag">Hai Duong, Vietnam</span></li><li><span class="tag">Long Biên district, Hanoi, Vietnam</span></li><li><span class="tag">Minh Khai, Hanoi, Vietnam</span></li><li><span class="tag">Thành Phố Nam Định, Nam Dinh, Vietnam</span></li><li><span class="tag">District 6, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Xã An Nội, Ha Nam, Vietnam</span></li><li><span class="tag">Bình Tân, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Huyện Củ Chi, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Gia Lâm district, Hanoi, Vietnam</span></li><li><span class="tag">Văn Giang, Hung Yen, Vietnam</span></li><li><span class="tag">District 5, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Hung Yen, Vietnam</span></li><li><span class="tag">Hanoi, Hanoi, Vietnam</span></li><li><span class="tag">Đông Anh district, Hanoi, Vietnam</span></li><li><span class="tag">Thành Phố Hưng Yên, Hung Yen, Vietnam</span></li><li><span class="tag">Quận Bình Thạnh, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Phường Láng Hạ, Hanoi, Vietnam</span></li><li><span class="tag">Can Tho, Vietnam</span></li><li><span class="tag">Nhơn Trạch district, Dong Nai, Vietnam</span></li><li><span class="tag">Quận 6, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Quận 1, Ho Chi Minh City, Vietnam</span></li><li><span class="tag">Gia Lâm, Hanoi, Vietnam</span></li></ul>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-7">
+        <header class="col-header">
+          <h2 id="col-7">about</h2>
+          <span class="pill-type" aria-label="Type: scalar_text">scalar_text</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for about">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-warning" aria-label="Presence: 65.89% — partial">65.89%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="2,004 unique values">2,004</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><code class="inline-code">A passionate marketer with a robust background in social media planning and content writing. During my academic journey, I actively participated in numerous client campaigns, gaining hands-on experience with dedication and enthusiasm for the field.</code></dd>
+          </div>
+        </dl>
+        
+      </article>
+
+      <article class="col-card" aria-labelledby="col-8">
+        <header class="col-header">
+          <h2 id="col-8">recommendations_count</h2>
+          <span class="pill-type" aria-label="Type: scalar_text">scalar_text</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for recommendations_count">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-danger" aria-label="Presence: 6.21% — low">6.21%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="7 unique values">7</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><code class="inline-code">1</code></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Unique values for column recommendations_count">
+          <h3>Unique values</h3>
+          <ul class="tag-list" aria-label="7 unique values"><li><span class="tag">15</span></li><li><span class="tag">3</span></li><li><span class="tag">1</span></li><li><span class="tag">8</span></li><li><span class="tag">5</span></li><li><span class="tag">2</span></li><li><span class="tag">4</span></li></ul>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-9">
+        <header class="col-header">
+          <h2 id="col-9">courses</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for courses">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-danger" aria-label="Presence: 7.23% — low">7.23%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column courses">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column courses">
+              <caption class="sr-only">Nested schema fields for column courses</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-mandatory">
+                <th scope="row">subtitle <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">685</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">title <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">860</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column courses">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;subtitle&quot;: &quot;MKTG1421&quot;,
+  &quot;title&quot;: &quot;Consumer Psychology and Behaviour&quot;
+}</pre>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-10">
+        <header class="col-header">
+          <h2 id="col-10">languages</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for languages">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-danger" aria-label="Presence: 30.4% — low">30.4%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column languages">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column languages">
+              <caption class="sr-only">Nested schema fields for column languages</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-mandatory">
+                <th scope="row">subtitle <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">11</td>
+                <td><ul class="tag-list" aria-label="11 unique values"><li><span class="tag tag-sm"> Elementary proficiency </span></li><li><span class="tag tag-sm"> Professional working proficiency </span></li><li><span class="tag tag-sm">Native or bilingual proficiency</span></li><li><span class="tag tag-sm">-</span></li><li><span class="tag tag-sm"> Full professional proficiency </span></li><li><span class="tag tag-sm">Elementary proficiency</span></li><li><span class="tag tag-sm"> Limited working proficiency </span></li><li><span class="tag tag-sm">Limited working proficiency</span></li><li><span class="tag tag-sm">Full professional proficiency</span></li><li><span class="tag tag-sm">Professional working proficiency</span></li><li><span class="tag tag-sm"> Native or bilingual proficiency </span></li></ul></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">title <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">64</td>
+                <td><ul class="tag-list" aria-label="64 unique values"><li><span class="tag tag-sm">Dutch</span></li><li><span class="tag tag-sm">Mandarin Chinese</span></li><li><span class="tag tag-sm">Ukrainian</span></li><li><span class="tag tag-sm">Spanish</span></li><li><span class="tag tag-sm"> Chinese </span></li><li><span class="tag tag-sm">Englisch</span></li><li><span class="tag tag-sm">IELTS</span></li><li><span class="tag tag-sm">Russisch</span></li><li><span class="tag tag-sm">German</span></li><li><span class="tag tag-sm">Chinese (Mandarin)</span></li><li><span class="tag tag-sm">Deutsch</span></li><li><span class="tag tag-sm">Español</span></li><li><span class="tag tag-sm">Arabic</span></li><li><span class="tag tag-sm">Japanese</span></li><li><span class="tag tag-sm">English (IELTS 7.0)</span></li><li><span class="tag tag-sm">English &amp; Vietnamese</span></li><li><span class="tag tag-sm">English - IELTS 8.0</span></li><li><span class="tag tag-sm">German - DSD II (C1 Niveau)</span></li><li><span class="tag tag-sm">Amharic</span></li><li><span class="tag tag-sm">Lao</span></li><li><span class="tag tag-sm"> Vietnamese </span></li><li><span class="tag tag-sm">Vietnamesisch</span></li><li><span class="tag tag-sm">Vietnam</span></li><li><span class="tag tag-sm">France</span></li><li><span class="tag tag-sm">English (IELTS: 8.0)</span></li><li><span class="tag tag-sm">Spain</span></li><li><span class="tag tag-sm"> Japanese </span></li><li><span class="tag tag-sm">Chinese (Simplified)</span></li><li><span class="tag tag-sm">Polish</span></li><li><span class="tag tag-sm">American Sign Language</span></li><li><span class="tag tag-sm">Russian</span></li><li><span class="tag tag-sm">Thai</span></li><li><span class="tag tag-sm">Cantonese</span></li><li><span class="tag tag-sm">Swahili</span></li><li><span class="tag tag-sm">French</span></li><li><span class="tag tag-sm">Chinese</span></li><li><span class="tag tag-sm">Tiếng Đức</span></li><li><span class="tag tag-sm">Simplified Mandarin (Chinese) 普通话</span></li><li><span class="tag tag-sm">Khmer</span></li><li><span class="tag tag-sm">Hindi</span></li><li><span class="tag tag-sm">Sino-Vietnamese</span></li><li><span class="tag tag-sm">일본어</span></li><li><span class="tag tag-sm"> Korean </span></li><li><span class="tag tag-sm">Vietnamese</span></li><li><span class="tag tag-sm">English</span></li><li><span class="tag tag-sm">한국어</span></li><li><span class="tag tag-sm">English (IELTS 7.5)</span></li><li><span class="tag tag-sm">English and Vietnamese</span></li><li><span class="tag tag-sm">Taiwanese</span></li><li><span class="tag tag-sm">Hokkien</span></li><li><span class="tag tag-sm">영어</span></li><li><span class="tag tag-sm">Engligh</span></li><li><span class="tag tag-sm">Sign Languages</span></li><li><span class="tag tag-sm">Vietnamese, English</span></li><li><span class="tag tag-sm">Tiếng Anh</span></li><li><span class="tag tag-sm">Danish</span></li><li><span class="tag tag-sm"> English </span></li><li><span class="tag tag-sm">English (IELTS: 7.5)</span></li><li><span class="tag tag-sm">Portuguese</span></li><li><span class="tag tag-sm">Korean</span></li><li><span class="tag tag-sm">Mandarin</span></li><li><span class="tag tag-sm">Standard Chinese - Mandarin</span></li><li><span class="tag tag-sm">Японский</span></li><li><span class="tag tag-sm">Latvian</span></li></ul></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column languages">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;subtitle&quot;: &quot;Professional working proficiency&quot;,
+  &quot;title&quot;: &quot;English&quot;
+}</pre>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-11">
+        <header class="col-header">
+          <h2 id="col-11">certifications</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for certifications">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-warning" aria-label="Presence: 53.24% — partial">53.24%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column certifications">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column certifications">
+              <caption class="sr-only">Nested schema fields for column certifications</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-even">
+                <th scope="row">credential_id<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-danger" aria-label="Presence: 23.74243% — low">23.74243%</span></td>
+                <td class="center">1,662</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">credential_url<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-warning" aria-label="Presence: 73.05904% — partial">73.05904%</span></td>
+                <td class="center">5,105</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-even">
+                <th scope="row">meta<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 97.11146% — high">97.11146%</span></td>
+                <td class="center">2,132</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">subtitle <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">918</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">title <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">3,738</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column certifications">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;credential_id&quot;: &quot;99251019&quot;,
+  &quot;credential_url&quot;: &quot;https://skillshop.exceedlms.com/student/award/6n1tdKWQvrucCyrYQEEgfTQu?trk=public_profile_see-credential&quot;,
+  &quot;meta&quot;: &quot;Issued Feb 2022 Credential ID 99251019 See credential&quot;,
+  &quot;subtitle&quot;: &quot;Google Digital Academy (Skillshop)&quot;,
+  &quot;title&quot;: &quot;Google Ads Video Certification&quot;
+}</pre>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-12">
+        <header class="col-header">
+          <h2 id="col-12">recommendations</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for recommendations">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-danger" aria-label="Presence: 6.18% — low">6.18%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column recommendations">
+          <h3>Nested schema</h3>
+          <p class="muted">No nested schema defined.</p>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-13">
+        <header class="col-header">
+          <h2 id="col-13">volunteer_experience</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for volunteer_experience">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-danger" aria-label="Presence: 24.02% — low">24.02%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column volunteer_experience">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column volunteer_experience">
+              <caption class="sr-only">Nested schema fields for column volunteer_experience</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-even">
+                <th scope="row">cause<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-warning" aria-label="Presence: 70.85775% — partial">70.85775%</span></td>
+                <td class="center">15</td>
+                <td><ul class="tag-list" aria-label="15 unique values"><li><span class="tag tag-sm">Economic Empowerment</span></li><li><span class="tag tag-sm">Social Services</span></li><li><span class="tag tag-sm">Health</span></li><li><span class="tag tag-sm">Environment</span></li><li><span class="tag tag-sm">Science and Technology</span></li><li><span class="tag tag-sm">i18n_veterans</span></li><li><span class="tag tag-sm">Arts and Culture</span></li><li><span class="tag tag-sm">Children</span></li><li><span class="tag tag-sm">Human Rights</span></li><li><span class="tag tag-sm">Animal Welfare</span></li><li><span class="tag tag-sm">Disaster and Humanitarian Relief</span></li><li><span class="tag tag-sm">Civil Rights and Social Action</span></li><li><span class="tag tag-sm">Education</span></li><li><span class="tag tag-sm">Poverty Alleviation</span></li><li><span class="tag tag-sm">Politics</span></li></ul></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">subtitle <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">1,108</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">title <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">1,090</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">duration<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 93.81993% — high">93.81993%</span></td>
+                <td class="center">943</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-even">
+                <th scope="row">duration_short<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 93.81993% — high">93.81993%</span></td>
+                <td class="center">84</td>
+                <td><ul class="tag-list" aria-label="84 unique values"><li><span class="tag tag-sm">4 years</span></li><li><span class="tag tag-sm">6 months</span></li><li><span class="tag tag-sm">- 
+Apr 2020</span></li><li><span class="tag tag-sm">2 years 1 month</span></li><li><span class="tag tag-sm">1 year 5 months</span></li><li><span class="tag tag-sm">3 years 4 months</span></li><li><span class="tag tag-sm">8 years</span></li><li><span class="tag tag-sm">4 years 11 months</span></li><li><span class="tag tag-sm">3 years 9 months</span></li><li><span class="tag tag-sm">3 months</span></li><li><span class="tag tag-sm">4 years 7 months</span></li><li><span class="tag tag-sm">1 year 1 month</span></li><li><span class="tag tag-sm">11 years 6 months</span></li><li><span class="tag tag-sm">2 months</span></li><li><span class="tag tag-sm">1 year 4 months</span></li><li><span class="tag tag-sm">6 years 9 months</span></li><li><span class="tag tag-sm">2 years 7 months</span></li><li><span class="tag tag-sm">6 years 7 months</span></li><li><span class="tag tag-sm">3 years 6 months</span></li><li><span class="tag tag-sm">5 years 9 months</span></li><li><span class="tag tag-sm">2 years</span></li><li><span class="tag tag-sm">1 year 6 months</span></li><li><span class="tag tag-sm">2 years 9 months</span></li><li><span class="tag tag-sm">4 years 6 months</span></li><li><span class="tag tag-sm">1 month</span></li><li><span class="tag tag-sm">5 years 10 months</span></li><li><span class="tag tag-sm">1 year 10 months</span></li><li><span class="tag tag-sm">2 years 2 months</span></li><li><span class="tag tag-sm">5 years 4 months</span></li><li><span class="tag tag-sm">12 years 9 months</span></li><li><span class="tag tag-sm">2 years 8 months</span></li><li><span class="tag tag-sm">3 years 8 months</span></li><li><span class="tag tag-sm">10 months</span></li><li><span class="tag tag-sm">1 year 3 months</span></li><li><span class="tag tag-sm">6 years</span></li><li><span class="tag tag-sm">7 years 11 months</span></li><li><span class="tag tag-sm">3 years 5 months</span></li><li><span class="tag tag-sm">7 years 3 months</span></li><li><span class="tag tag-sm">2 years 4 months</span></li><li><span class="tag tag-sm">9 months</span></li><li><span class="tag tag-sm">11 years 4 months</span></li><li><span class="tag tag-sm">7 years 2 months</span></li><li><span class="tag tag-sm">1 year 2 months</span></li><li><span class="tag tag-sm">5 years 8 months</span></li><li><span class="tag tag-sm">- 
+Dec 2022</span></li><li><span class="tag tag-sm">1 year</span></li><li><span class="tag tag-sm">3 years</span></li><li><span class="tag tag-sm">3 years 2 months</span></li><li><span class="tag tag-sm">7 months</span></li><li><span class="tag tag-sm">- 
+Jun 2021</span></li><li><span class="tag tag-sm">5 months</span></li><li><span class="tag tag-sm">1 year 9 months</span></li><li><span class="tag tag-sm">1 year 11 months</span></li><li><span class="tag tag-sm">4 months</span></li><li><span class="tag tag-sm">5 years 11 months</span></li><li><span class="tag tag-sm">5 years 3 months</span></li><li><span class="tag tag-sm">- 
+May 2018</span></li><li><span class="tag tag-sm">5 years</span></li><li><span class="tag tag-sm">11 months</span></li><li><span class="tag tag-sm">2 years 6 months</span></li><li><span class="tag tag-sm">5 years 2 months</span></li><li><span class="tag tag-sm">4 years 5 months</span></li><li><span class="tag tag-sm">3 years 7 months</span></li><li><span class="tag tag-sm">2 years 11 months</span></li><li><span class="tag tag-sm">4 years 1 month</span></li><li><span class="tag tag-sm">3 years 1 month</span></li><li><span class="tag tag-sm">4 years 2 months</span></li><li><span class="tag tag-sm">3 years 3 months</span></li><li><span class="tag tag-sm">4 years 8 months</span></li><li><span class="tag tag-sm">5 years 1 month</span></li><li><span class="tag tag-sm">3 years 11 months</span></li><li><span class="tag tag-sm">1 year 8 months</span></li><li><span class="tag tag-sm">6 years 1 month</span></li><li><span class="tag tag-sm">2 years 10 months</span></li><li><span class="tag tag-sm">20 years 6 months</span></li><li><span class="tag tag-sm">8 months</span></li><li><span class="tag tag-sm">5 years 5 months</span></li><li><span class="tag tag-sm">4 years 4 months</span></li><li><span class="tag tag-sm">6 years 4 months</span></li><li><span class="tag tag-sm">11 years</span></li><li><span class="tag tag-sm">1 year 7 months</span></li><li><span class="tag tag-sm">2 years 5 months</span></li><li><span class="tag tag-sm">2 years 3 months</span></li><li><span class="tag tag-sm">less than a year</span></li></ul></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">end_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 93.60682% — high">93.60682%</span></td>
+                <td class="center">122</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-even">
+                <th scope="row">info<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-warning" aria-label="Presence: 67.3415% — partial">67.3415%</span></td>
+                <td class="center">1,257</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">start_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 93.81993% — high">93.81993%</span></td>
+                <td class="center">137</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column volunteer_experience">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;cause&quot;: &quot;Social Services&quot;,
+  &quot;duration&quot;: &quot;Nov 2022 - Nov 2022 · 1 month&quot;,
+  &quot;duration_short&quot;: &quot;1 month&quot;,
+  &quot;end_date&quot;: &quot;Nov 2022&quot;,
+  &quot;info&quot;: &quot;Chosen as a fully-funded youth delegate representing Vietnam to discuss youth voluntarism globally in the International Volunteer Forum, hosted in Istanbul, Turkey&quot;,
+  &quot;start_date&quot;: &quot;Nov 2022&quot;,
+  &quot;subtitle&quot;: &quot;Headway Institute of Strategic Alliance&quot;,
+  &quot;title&quot;: &quot;Delegate&quot;
+}</pre>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-14">
+        <header class="col-header">
+          <h2 id="col-14">followers</h2>
+          <span class="pill-type" aria-label="Type: scalar_text">scalar_text</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for followers">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-info" aria-label="Presence: 97.04% — high">97.04%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="1,056 unique values">1,056</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><code class="inline-code">892</code></dd>
+          </div>
+        </dl>
+        
+      </article>
+
+      <article class="col-card" aria-labelledby="col-15">
+        <header class="col-header">
+          <h2 id="col-15">connections</h2>
+          <span class="pill-type" aria-label="Type: scalar_text">scalar_text</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for connections">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-info" aria-label="Presence: 96.88% — high">96.88%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="463 unique values">463</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><code class="inline-code">500</code></dd>
+          </div>
+        </dl>
+        
+      </article>
+
+      <article class="col-card" aria-labelledby="col-16">
+        <header class="col-header">
+          <h2 id="col-16">publications</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for publications">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-danger" aria-label="Presence: 1.61% — low">1.61%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column publications">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column publications">
+              <caption class="sr-only">Nested schema fields for column publications</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-even">
+                <th scope="row">date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 90.625% — high">90.625%</span></td>
+                <td class="center">80</td>
+                <td><ul class="tag-list" aria-label="80 unique values"><li><span class="tag tag-sm">June 7, 2022</span></li><li><span class="tag tag-sm">May 19, 2023</span></li><li><span class="tag tag-sm">August 30, 2022</span></li><li><span class="tag tag-sm">June 21, 2021</span></li><li><span class="tag tag-sm">February 9, 2023</span></li><li><span class="tag tag-sm">April 4, 2025</span></li><li><span class="tag tag-sm">June 18, 2025</span></li><li><span class="tag tag-sm">November 7, 2020</span></li><li><span class="tag tag-sm">April 11, 2022</span></li><li><span class="tag tag-sm">November 25, 2021</span></li><li><span class="tag tag-sm">July 4, 2023</span></li><li><span class="tag tag-sm">January 21, 2024</span></li><li><span class="tag tag-sm">May 11, 2022</span></li><li><span class="tag tag-sm">February 28, 2024</span></li><li><span class="tag tag-sm">September 11, 2020</span></li><li><span class="tag tag-sm">June 9, 2021</span></li><li><span class="tag tag-sm">October 22, 2024</span></li><li><span class="tag tag-sm">June 25, 2025</span></li><li><span class="tag tag-sm">June 28, 2022</span></li><li><span class="tag tag-sm">June 26, 2024</span></li><li><span class="tag tag-sm">February 25, 2025</span></li><li><span class="tag tag-sm">August 27, 2025</span></li><li><span class="tag tag-sm">July 18, 2025</span></li><li><span class="tag tag-sm">November 6, 2024</span></li><li><span class="tag tag-sm">August 4, 2023</span></li><li><span class="tag tag-sm">March 23, 2023</span></li><li><span class="tag tag-sm">May 18, 2023</span></li><li><span class="tag tag-sm">July 1, 2021</span></li><li><span class="tag tag-sm">September 24, 2023</span></li><li><span class="tag tag-sm">August 23, 2023</span></li><li><span class="tag tag-sm">January 14, 2025</span></li><li><span class="tag tag-sm">November 20, 2024</span></li><li><span class="tag tag-sm">December 20, 2024</span></li><li><span class="tag tag-sm">April 29, 2025</span></li><li><span class="tag tag-sm">November 26, 2024</span></li><li><span class="tag tag-sm">November 21, 2024</span></li><li><span class="tag tag-sm">May 12, 2022</span></li><li><span class="tag tag-sm">November 15, 2024</span></li><li><span class="tag tag-sm">August 30, 2024</span></li><li><span class="tag tag-sm">September 13, 2024</span></li><li><span class="tag tag-sm">January 2, 2024</span></li><li><span class="tag tag-sm">February 4, 2025</span></li><li><span class="tag tag-sm">November 25, 2016</span></li><li><span class="tag tag-sm">July 19, 2023</span></li><li><span class="tag tag-sm">April 16, 2025</span></li><li><span class="tag tag-sm">August 1, 2025</span></li><li><span class="tag tag-sm">June 9, 2014</span></li><li><span class="tag tag-sm">September 11, 2024</span></li><li><span class="tag tag-sm">September 4, 2024</span></li><li><span class="tag tag-sm">July 10, 2022</span></li><li><span class="tag tag-sm">September 7, 2023</span></li><li><span class="tag tag-sm">June 5, 2022</span></li><li><span class="tag tag-sm">May 27, 2023</span></li><li><span class="tag tag-sm">October 25, 2024</span></li><li><span class="tag tag-sm">June 2, 2022</span></li><li><span class="tag tag-sm">February 11, 2021</span></li><li><span class="tag tag-sm">September 22, 2023</span></li><li><span class="tag tag-sm">August 17, 2022</span></li><li><span class="tag tag-sm">October 1, 2023</span></li><li><span class="tag tag-sm">May 1, 2025</span></li><li><span class="tag tag-sm">July 1, 2025</span></li><li><span class="tag tag-sm">June 10, 2021</span></li><li><span class="tag tag-sm">August 3, 2021</span></li><li><span class="tag tag-sm">June 3, 2025</span></li><li><span class="tag tag-sm">August 11, 2021</span></li><li><span class="tag tag-sm">June 5, 2025</span></li><li><span class="tag tag-sm">March 8, 2024</span></li><li><span class="tag tag-sm">April 4, 2022</span></li><li><span class="tag tag-sm">April 18, 2022</span></li><li><span class="tag tag-sm">February 28, 2025</span></li><li><span class="tag tag-sm">December 15, 2023</span></li><li><span class="tag tag-sm">April 28, 2022</span></li><li><span class="tag tag-sm">October 13, 2024</span></li><li><span class="tag tag-sm">November 9, 2020</span></li><li><span class="tag tag-sm">February 20, 2023</span></li><li><span class="tag tag-sm">May 30, 2022</span></li><li><span class="tag tag-sm">July 12, 2025</span></li><li><span class="tag tag-sm">April 19, 2023</span></li><li><span class="tag tag-sm">April 1, 2022</span></li><li><span class="tag tag-sm">September 30, 2022</span></li></ul></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">subtitle<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 96.875% — high">96.875%</span></td>
+                <td class="center">74</td>
+                <td><ul class="tag-list" aria-label="74 unique values"><li><span class="tag tag-sm">JOURNAL OF 108 - CLINICAL MEDICINE AND PHARMACY</span></li><li><span class="tag tag-sm">Sex Education</span></li><li><span class="tag tag-sm">ACS Omega</span></li><li><span class="tag tag-sm">RMIT Public Speaking Club Hanoi</span></li><li><span class="tag tag-sm">Frontiers</span></li><li><span class="tag tag-sm">RMIT University</span></li><li><span class="tag tag-sm">Journal of Crop Improvement</span></li><li><span class="tag tag-sm">Evaluation Review</span></li><li><span class="tag tag-sm">Soil and Tillage Researh</span></li><li><span class="tag tag-sm">Finance Publishing House - Ministry of Finance</span></li><li><span class="tag tag-sm">Nursing Forum</span></li><li><span class="tag tag-sm">Journal of Computational Chemistry</span></li><li><span class="tag tag-sm">Vietnam Journal of Community Medicine</span></li><li><span class="tag tag-sm">Frontiers in Psychology - Sec. Health Psychology</span></li><li><span class="tag tag-sm">Viet Nam News Economy</span></li><li><span class="tag tag-sm">Proceedings of the Winter Conference on Applications of Computer Vision (WACV)</span></li><li><span class="tag tag-sm">SpringerNature Link</span></li><li><span class="tag tag-sm">Vietnam Medical Journal</span></li><li><span class="tag tag-sm">Hội Doanh nhân trẻ Việt Nam</span></li><li><span class="tag tag-sm">Supportive Care in Cancer</span></li><li><span class="tag tag-sm">SBOOKS</span></li><li><span class="tag tag-sm">IEEE Transactions on Neural Networks and Learning Systems (TNNLS)</span></li><li><span class="tag tag-sm">Xi'an Shiyou Daxue Xuebao - Journal of Xi'an Shiyou University</span></li><li><span class="tag tag-sm">Journal of Nursing Science</span></li><li><span class="tag tag-sm">Gadjah Mada International Journal of Business</span></li><li><span class="tag tag-sm">Frontiers in Psychiatry</span></li><li><span class="tag tag-sm">The International Academic Forum (IAFOR)</span></li><li><span class="tag tag-sm">Springer Nature</span></li><li><span class="tag tag-sm">Ben Thanh Investment</span></li><li><span class="tag tag-sm">Springer</span></li><li><span class="tag tag-sm">Journal Of Community Medicine</span></li><li><span class="tag tag-sm">Marine Pollution Bulletin</span></li><li><span class="tag tag-sm">SPIE</span></li><li><span class="tag tag-sm">Peaking Point</span></li><li><span class="tag tag-sm">Tạp Chí Điện Tử - Báo Nông Nghiệp Việt Nam</span></li><li><span class="tag tag-sm">Open Innovation Conference 2024 Theme: Innovation for a green future</span></li><li><span class="tag tag-sm">IEEE</span></li><li><span class="tag tag-sm">Peaking Point Community</span></li><li><span class="tag tag-sm">Royal Society Open Science</span></li><li><span class="tag tag-sm">Springer and FPT Edu ResFes 2024</span></li><li><span class="tag tag-sm">Báo điện tử Đầu tư</span></li><li><span class="tag tag-sm">Journal of Adventure Education and Outdoor Learning</span></li><li><span class="tag tag-sm">RMIT VN website</span></li><li><span class="tag tag-sm">UMP journal of medical research</span></li><li><span class="tag tag-sm">Alpha Books</span></li><li><span class="tag tag-sm">The Journal of Continuing Education in Nursing</span></li><li><span class="tag tag-sm">University of Economics and Law</span></li><li><span class="tag tag-sm">FEMS Euromat 2023</span></li><li><span class="tag tag-sm">Journal of Science: Advanced Materials and Devices</span></li><li><span class="tag tag-sm">Vietnamese Language and Speech Processing</span></li><li><span class="tag tag-sm">Journal of Health and Developmental Studies</span></li><li><span class="tag tag-sm">Academy of Asian Business (AAB)</span></li><li><span class="tag tag-sm">VietnamFinance</span></li><li><span class="tag tag-sm">Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)</span></li><li><span class="tag tag-sm">FTU Working Paper Series</span></li><li><span class="tag tag-sm">Vietnam Finance</span></li><li><span class="tag tag-sm">Taylor &amp; Francis Online</span></li><li><span class="tag tag-sm">Journal of Enterprise Information Management</span></li><li><span class="tag tag-sm">Foundry BC</span></li><li><span class="tag tag-sm">Academy of Asian Business Review</span></li><li><span class="tag tag-sm">The Mystical Universe</span></li><li><span class="tag tag-sm">Late Breaking Report at the 33rd IEEE International Conference on Robot and Human Interactive Communication (RO-MAN)</span></li><li><span class="tag tag-sm">The Vietnam Ministry of Science and Technolgy</span></li><li><span class="tag tag-sm">Journal of Child Neurology</span></li><li><span class="tag tag-sm">Published in Proceedings 2024 International Conference on Control, Robotics and Informatics (ICCRI)</span></li><li><span class="tag tag-sm">Findings of the Association for Computational Linguistics: NAACL 2025</span></li><li><span class="tag tag-sm">Association for Vietnamese Language Speech Processing (VLSP)</span></li><li><span class="tag tag-sm">VIR</span></li><li><span class="tag tag-sm">Under-review</span></li><li><span class="tag tag-sm">Wiley</span></li><li><span class="tag tag-sm">Hoa Hoc Tro Magazine</span></li><li><span class="tag tag-sm">Báo Công Thương</span></li><li><span class="tag tag-sm">Social Responsibility Journal</span></li><li><span class="tag tag-sm">IGI Global</span></li></ul></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">title <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">91</td>
+                <td><ul class="tag-list" aria-label="91 unique values"><li><span class="tag tag-sm">Application Of Incoterms To International Trade Transactions During Covid-19 And Recommendations For Vietnam’s Export And Import Enterprises</span></li><li><span class="tag tag-sm">Energy-Aware Resource Allocation for Energy Harvesting Powered Wireless Sensor Nodes</span></li><li><span class="tag tag-sm">Logistics properties attract strong investor interest</span></li><li><span class="tag tag-sm">Cơ hội cho xuất khẩu gạo Việt Nam: Vai trò của việc ứng dụng công nghệ cao trong sản xuất nông nghiệp</span></li><li><span class="tag tag-sm">A qualitative study on university student learning as part of an outdoor leadership course in Vietnam</span></li><li><span class="tag tag-sm">Outcomes of Therapeutic Plasma Exchange Among Children With Autoimmune Encephalitis in Vietnam</span></li><li><span class="tag tag-sm">Co-design application and consideration for health technology intervention in Vietnam</span></li><li><span class="tag tag-sm">Impacts of land law on foreign investors</span></li><li><span class="tag tag-sm">Strengthening Teaching Capacities for Nurse Lecturers: An Initial Report</span></li><li><span class="tag tag-sm">Changes in knowledge of women with cancer about mental health care after participating in a health education program</span></li><li><span class="tag tag-sm">𝐑𝐎𝐔𝐍𝐃 𝟑 𝐒𝐔𝐁𝐌𝐈𝐒𝐒𝐈𝐎𝐍 𝐎𝐅𝐅𝐈𝐂𝐈𝐀𝐋𝐋𝐘 𝐂𝐋𝐎𝐒𝐄𝐃</span></li><li><span class="tag tag-sm">An Integrated Digital Marketing Model in Mental Health</span></li><li><span class="tag tag-sm">Local Opinions on Artificial Intelligence in Healthcare: A Scoping Review from Low- and Middle-Income Southeast Asian Countries</span></li><li><span class="tag tag-sm">Psychological Thriller: How it has changed over time</span></li><li><span class="tag tag-sm">Factors That Influence the Intention of Smallholder Rice Farmers to Adopt Cleaner Production Practices: An Empirical Study of Precision Agriculture Adoption</span></li><li><span class="tag tag-sm">Southern industrial real estate: TP. Ho Chi Minh City's asking price is too expensive, will Long An take the throne?</span></li><li><span class="tag tag-sm">Ch. 19: An Adaptive AutoLearning System for Camera-Based Facial Recognition.</span></li><li><span class="tag tag-sm">Exploring the Effect of Social Media Content of Virtual Influencers on Generation Z’s Purchase Intention: An Elaboration Likelihood Model Approach</span></li><li><span class="tag tag-sm">ESGNN: Towards Equivariant Scene Graph Neural Network for 3D Scene Understanding</span></li><li><span class="tag tag-sm">Entrepreneurial ecosystem affects organisational learning, creativity and success</span></li><li><span class="tag tag-sm">International Human Resources Essay</span></li><li><span class="tag tag-sm">Current Situation and Demand for Continuing Medical Education (CME) of Clinical Nurses in Vinh Phuc Province</span></li><li><span class="tag tag-sm">Students’ Views of Art Education as Their Future Career</span></li><li><span class="tag tag-sm">Small Steps, Big Rewards: 10 Life Transforming Habits Worth Developing</span></li><li><span class="tag tag-sm">Building Mental Health Care Literacy in Oncology Nurses: Impact of an Effective Training Program</span></li><li><span class="tag tag-sm">Socially Aware Motion Planning for Service Robots Using LiDAR and RGB-D Camera</span></li><li><span class="tag tag-sm">202X Dictionary</span></li><li><span class="tag tag-sm">Service-oriented manufacturing supply chain: risks and their resonant effect</span></li><li><span class="tag tag-sm">𝐑𝐄𝐌𝐈𝐍𝐃𝐄𝐑: 𝟏 𝐃𝐀𝐘 𝐋𝐄𝐅𝐓 - 𝐈’𝐌 𝐂𝐎𝐌𝐈𝐍𝐆, 𝐒𝐎 𝐀𝐑𝐄 𝐘𝐎𝐔!</span></li><li><span class="tag tag-sm">Marketing Portfolio</span></li><li><span class="tag tag-sm">Tuning optical properties of conjugated molecules by Lewis acids: Insights from electronic structure modeling and machine learning</span></li><li><span class="tag tag-sm">𝐇𝐎𝐖 𝐃𝐎 𝐏𝐄𝐎𝐏𝐋𝐄 𝐓𝐇𝐈𝐍𝐊 𝐀𝐁𝐎𝐔𝐓 𝐏𝐄𝐀𝐊𝐈𝐍𝐆 𝐏𝐎𝐈𝐍𝐓 𝟐𝟎𝟐𝟐</span></li><li><span class="tag tag-sm">Sexual and reproductive health in a Vietnamese mountainous area: a qualitative analysis of current community and institutional health education</span></li><li><span class="tag tag-sm">Mental health resources for educators in Vietnam</span></li><li><span class="tag tag-sm">Mediating Role of Educational Environment in the Relationship Between Workload and Generic Skills of Nursing Students in Vietnam</span></li><li><span class="tag tag-sm">𝐅𝐈𝐍𝐀𝐋𝐄 𝐀𝐆𝐄𝐍𝐃𝐀 𝐀𝐍𝐍𝐎𝐔𝐍𝐂𝐄𝐌𝐄𝐍𝐓</span></li><li><span class="tag tag-sm">𝐓𝐇𝐄 𝐓𝐀𝐋𝐊𝐈𝐍𝐆 𝐏𝐎𝐈𝐍𝐓 #𝟎𝟓: 𝐒𝐔 𝐇𝐎 𝐕𝐔𝐎𝐍𝐆 𝐀𝐍𝐃 𝐓𝐇𝐄 𝐋𝐄𝐒𝐒𝐎𝐍𝐒 𝐀𝐁𝐎𝐔𝐓 𝐂𝐔𝐋𝐓𝐔𝐑𝐀𝐋 𝐇𝐈𝐒𝐓𝐎𝐑𝐘 𝐀𝐃𝐉𝐔𝐒𝐓𝐌𝐄𝐍𝐓</span></li><li><span class="tag tag-sm">Preservation and Development of Islamic Cham’s Cultural Values to Stimulate Tourism and Economic Growth in An Giang Province, Mekong Delta, Vietnam</span></li><li><span class="tag tag-sm">Legalization transexual in Vietnam</span></li><li><span class="tag tag-sm">The impacts of cancer treatment on lifestyle habits and mental health in Vietnamese women: an exploratory qualitative study</span></li><li><span class="tag tag-sm">TESGNN: Temporal Equivariant Scene Graph Neural Networks for Efficient and Robust Multi-View 3D Scene Understanding</span></li><li><span class="tag tag-sm">VSC: Visual Search Compositional Text-to-Image Diffusion Model</span></li><li><span class="tag tag-sm">Vingroup: The Rising Dragon That Put Vietnam on the Global Map</span></li><li><span class="tag tag-sm">Hydrogen sulfide and earthworm casts can synergistically increase the cycling rate of soil arsenic</span></li><li><span class="tag tag-sm">HOPE: A Memory-Based and Composition-Aware Framework for Zero-Shot Learning with Hopfield Network and Soft Mixture of Experts</span></li><li><span class="tag tag-sm">RFID Technology in Fashion Supply Chain—Recent Trends and Analysis from Developing Countries</span></li><li><span class="tag tag-sm">Risk Identification and Its Resonant Effect in Service-Oriented Supply Chain</span></li><li><span class="tag tag-sm">Foreign investors collect land, prepare for modern logistics real estate projects</span></li><li><span class="tag tag-sm">Southern industrial real estate: Ho Chi Minh City is too expensive to rent, Long An will be crowned?</span></li><li><span class="tag tag-sm">Glucose sensors based on MoS2 nanosheets working in Phosphate-buffered saline</span></li><li><span class="tag tag-sm">Synergy of Machine Learning and Density Functional Theory Calculations for Predicting Experimental Lewis Base Affinity and Lewis Polybase Binding Atoms</span></li><li><span class="tag tag-sm">Corporate Social Responsibility in Vietnam: views from corporate and NGO executives</span></li><li><span class="tag tag-sm">ANTIBIOTIC USE IN DA TON COMMUNE: INSIGHT EXPLORATION FROM PARENTS’ PERSPECTIVES</span></li><li><span class="tag tag-sm">Discrete Diffusion Language Model for Efficient Text Summarization</span></li><li><span class="tag tag-sm">𝐓𝐇𝐔̛̉ 𝐓𝐇𝐀́𝐂𝐇 𝟔 𝐍𝐆𝐀̀𝐘 𝟔 Đ𝐄̂𝐌 𝐇𝐎̣𝐂 𝐌𝐀𝐑𝐊𝐄𝐓𝐈𝐍𝐆 𝐂𝐔̀𝐍𝐆 𝐊𝐏𝐎𝐏, 𝐆𝐄́𝐓 𝐆𝐎̂ 💪</span></li><li><span class="tag tag-sm">Co-author in A Book</span></li><li><span class="tag tag-sm">💥 𝐀𝐑𝐄𝐍’𝐓 𝐘𝐎𝐔 𝐂𝐔𝐑𝐈𝐎𝐔𝐒 𝐀𝐁𝐎𝐔𝐓 𝐎𝐔𝐑 𝐅𝐈𝐑𝐒𝐓 𝐓𝐖𝐎 𝐆𝐔𝐄𝐒𝐓𝐒? 💥</span></li><li><span class="tag tag-sm">Survey and Evaluation of Adversarial Attacks for Object Detection</span></li><li><span class="tag tag-sm">Unveiling Comparative Sentiments in Vietnamese Product Reviews: A Sequential Classification Framework</span></li><li><span class="tag tag-sm">Compare and Contrast of Common Network Architectologies - Bus, Star, Ring, and Mesh Topologies</span></li><li><span class="tag tag-sm">𝐂𝐎𝐌𝐄 𝐓𝐎 𝐂𝐀𝐓 𝐁𝐀 𝐓𝐎 𝐌𝐄𝐄𝐓 𝐎𝐔𝐑 𝐌𝐎𝐍𝐊𝐄𝐘 𝐁𝐑𝐄𝐄𝐃𝐄𝐑𝐒 🐒</span></li><li><span class="tag tag-sm">Co-writer of RMIT Blog Article</span></li><li><span class="tag tag-sm">Finding environmental-friendly chemical synthesis with AI and high-throughput robotics</span></li><li><span class="tag tag-sm">Digital Transformation in Vietnam: the SMEs and SOEs experience</span></li><li><span class="tag tag-sm">𝐑𝐎𝐔𝐍𝐃 𝟏 𝐒𝐔𝐁𝐌𝐈𝐒𝐒𝐈𝐎𝐍 𝐎𝐅𝐅𝐈𝐂𝐈𝐀𝐋𝐋𝐘 𝐂𝐋𝐎𝐒𝐄𝐃</span></li><li><span class="tag tag-sm">Determinants of Subscription Usage Decision on Online Streaming Services Among Vietnamese Gen Z</span></li><li><span class="tag tag-sm">The Happiness Diet: Avoid These 10 &quot;Mental Junk Food&quot; for A Better Life</span></li><li><span class="tag tag-sm">The Anti-Aging Secret: Overcoming Negative Emotions</span></li><li><span class="tag tag-sm">A Robust Authentication Technique for Client–Server Secure Login</span></li><li><span class="tag tag-sm">#𝐇𝐄𝐀𝐑𝐓𝐓𝐇𝐄𝐇𝐀𝐓𝐄 - 𝐍𝐇𝐔̛̃𝐍𝐆 𝐓𝐑𝐀́𝐈 𝐓𝐈𝐌 𝐁𝐈𝐄̂́𝐓 𝐍𝐎́𝐈</span></li><li><span class="tag tag-sm">Thương nhau đến ngày sau</span></li><li><span class="tag tag-sm">Gamified Tourism Framework: A Compatible Blockchain and AR-Based Milestone System for Enhancing Travel Engagement and Sustainability</span></li><li><span class="tag tag-sm">Will Long An industrial real estate market boom?</span></li><li><span class="tag tag-sm">The Influence of Entrepreneurial Ecosystems on Entrepreneurs' Perceptions and Business Success</span></li><li><span class="tag tag-sm">Functional excitation-inhibition ratio for social anxiety analysis and severity assessment</span></li><li><span class="tag tag-sm">SmallPlan: Leverage Small Language Models for Sequential Path Planning with Simulation-Powered, LLM-Guided Distillation</span></li><li><span class="tag tag-sm">Quantum Chemistry–Machine Learning Approach for Predicting Properties of Lewis Acid–Lewis Base Adducts</span></li><li><span class="tag tag-sm">A Quarter of Loss for the Real Estate Industry in Vietnam</span></li><li><span class="tag tag-sm">Haidilao's Journey to Captivate Global Diners with the Most Traditional Chinese Food</span></li><li><span class="tag tag-sm">Digital Twin Platform for Green and Smart Transportation</span></li><li><span class="tag tag-sm">Will Industrial in Long An is booming?</span></li><li><span class="tag tag-sm">Integration of Aerial Thermal Imaging and Deep Learning for Fault Detection in Photovoltaic Panels: A Study at Thinh Long Solar Power Plant</span></li><li><span class="tag tag-sm">Bioaccumulation and distribution of per- and polyfluoroalkyl substances and organophosphate flame retardants in marine organisms from the Vietnamese coast: Links to species traits and environmental exposure</span></li><li><span class="tag tag-sm">Surveying the relationship between academic score and training score of the regular students of the faculty of traditional medicine, University of Medicine and Pharmacy, Ho Chi MInh City</span></li><li><span class="tag tag-sm">Knowledge and Practice towards Menstruation among Vietnamese university students: A cross-sectional study</span></li><li><span class="tag tag-sm">The Short Version of Approaches and Study Skills Inventory for Students: A Confirmatory Factor Analysis in Vietnamese Nursing Students</span></li><li><span class="tag tag-sm">Foreign investors gather land to prepare for a modern logistics real estate project</span></li><li><span class="tag tag-sm">Beneath the surface: DNA barcoding of shark fins in Singapore</span></li><li><span class="tag tag-sm">The Failure of Starbucks in Australia</span></li><li><span class="tag tag-sm">Determinants of precision agriculture technology adoption in developing countries: a review</span></li><li><span class="tag tag-sm">Factors Influencing the Quality of Life among Women with Cancer in Vietnam</span></li></ul></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">description<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-danger" aria-label="Presence: 48.95833% — low">48.95833%</span></td>
+                <td class="center">46</td>
+                <td><ul class="tag-list" aria-label="46 unique values"><li><span class="tag tag-sm">The International Industry Learning Tour, organised by RMIT’s Careers, Alumni and Industry Relations Department as part of the Careers Festival 2024 event series, included a Future-led Design Thinking workshop with students from National University of Singapore, office visits to major companies, a visit to the Singapore Smart Nation CityScape Exhibition and networking activities with industry professionals such as Google, L’Oréal, Schaeffler, and the Alliance to End Plastic Waste (AEPW). These visits introduced the students to cutting-edge sustainability initiatives and gave them a glimpse of how global businesses address environmental challenges while fostering innovation. Here, five of the students share their most significant takeaways and reflect on how these experiences will shape their future careers.</span></li><li><span class="tag tag-sm">&quot;The most important thing now is to determine when the Vietnamese and global economies return to a new normal, especially in the context of severe disruption and change in supply and demand chains. Gaw NP Industrial is reviewing and adjusting the business investment scenario and strategy to be able to cope with the crisis caused by Covid-19 in the next 12-24 months&quot;</span></li><li><span class="tag tag-sm">Service robots that work alongside humans in a shared environment need a navigation system that takes into account not only physical safety but also social norms for mutual cooperation. In this paper, we introduce a motion planning system that includes human states such as positions and velocities and their personal space for social-aware navigation. The system first extracts human positions from the LiDAR and the RGB-D camera. It then uses the Kalman filter to fuse that information for human state estimation. An asymmetric Gaussian function is then employed to model human personal space based on their states. This model is used as the input to the dynamic window approach algorithm to generate trajectories for the robot. Experiments show that the robot is able to navigate alongside humans in a dynamic environment while respecting their physical and psychological comfort.</span></li><li><span class="tag tag-sm">Logistics properties attract strong investor interest</span></li><li><span class="tag tag-sm">Sustainable agriculture is crucial for achieving SDG2 and building a resilient climate-food system. This study provides a nuanced understanding of factors that influence the adoption of precision agriculture technology by Vietnamese smallholder rice farmers as a sustainable agricultural solution. The study’s objectives are: (1) to provide a nuanced understanding of factors that influence adoption of precision agriculture technology by Vietnamese smallholder rice farmers; and (2) to identify factors associated with agricultural practice in Vietnam that may impact the adoption of precision agriculture technology. The study conducted 35 semi-structured interviews with smallholder rice farmers and agriculture experts. Data were analyzed using iterative thematic analysis. The Unified Theory of Acceptance and Use of Technology (UTAUT) model was used for empirical analysis. The UTAUT constructs of Performance expectancy, Effort expectancy, Government support, and Social influence were found to be determinants of adoption. Trialability and Observability impact Effort expectancy and Performance expectancy. We also discovered that the performance of agricultural cooperatives and support of lead firms play a crucial role in facilitating agricultural technology adoption by Vietnamese smallholder rice farmers. The results confirm the applicability of UTAUT in defining smallholders’ behavioural intention and predicting agricultural technology adoption. The study also provides constructive feedback on the UTAUT model by highlighting the effect of agricultural cooperatives’ performance as innovation intermediaries and of the support of lead firms.</span></li><li><span class="tag tag-sm">Long An has the advantage of population (2 million people), is on the regional minimum wage II, so it is more competitive in terms of human resources than Binh Duong. , Dong Nai. This is very attractive for labor-intensive industries such as apparel, leather shoes.</span></li><li><span class="tag tag-sm">We co-authored the &quot;Vingroup: The Rising Dragon That Put Vietnam on the Global Map&quot; published in the Academy of Asian Business Review (AABR). We were grateful for the mentoring of Ms.Kyunghwa Chung, our Assistant Professor at VinUniversity.</span></li><li><span class="tag tag-sm">The study aims to assess changes in knowledge of women with cancer before and after participating in a health education program. The Mental Health Literacy questionnaire - short version for adults (MHLq-SVa) developed by Luísa Campos and colleagues was used in the study to measure knowledge level. The study was conducted on 120 women with cancer being treated at facilities and hospitals nationwide from February 2024 to April 2024.</span></li><li><span class="tag tag-sm">Many enterprises have been starting to build and develop large-scale industrial parks in Long An, waiting for the wave of movement and expansion of production of foreign investors.</span></li><li><span class="tag tag-sm">Objectives: To describe the current state and determine the requirements for continuing education (CE) of clinical nurses in Vinh Phuc province from 2019 to 2022. Subjects and method: A cross-sectional descriptive study, combining quantitative and qualitative, was conducted on 677 clinical nurses working in Vinh Phuc province from February 2022 to October 2022.Results: Although 100% of nurses participated in clinical training from 2019 to 2022 (n=677), only 39.6% attended the requisite number of sessions. The majority of training programs are short-term (52.3%); the training content is mostly technical skills and communication; training in scientific research accounts for just 30.7%. Most of the research subjects have training needs in Advanced Qualification (79.5%) and Nursing Technical Skills (69%). In which, the need for training in performing first aid techniques accounts for the highest rate (90.7%), followed by Ambu ball squeeze and extra-thoracic compression (73.1%). The Intubation Intubation Technique (87.9%) and the Intubation Assistance Technique (74.6%) have the greatest proportion of training demands among difficult nursing methods.Conclusion: Although 100% of nurses participated in the CME program, only 39.6% attended the requisite number of classes. The nursing program focuses on nursing technical skills, scientific research training, and a variety of complicated nursing procedures that have not before been focused on. Most nurses need training to advance their professional credentials, communication skills, and scientific research.Keywords: Continuing education, nurse, CE.</span></li><li><span class="tag tag-sm">Watkins J., Nguyen Q.T., Nkhoma M., Khanh V.T. &amp; Nguyen L.H.L (2021) Digital Transformation in Vietnam: the SME and SOE experience. RMIT University, Centre of Digital Excellence.</span></li><li><span class="tag tag-sm">My “Ong Hien” short prose was chosen to be printed in the book “Thuong nhau den ngay sau” published by SBOOKS.</span></li><li><span class="tag tag-sm">The study aims to illustrate the application of Incoterms® rules by Vietnamese enterprises in international trade, assess the importance of factors affecting the choice of Incoterms, and provide risk-mitigation recommendations for enterprises in the context of COVID-19. The factors influencing the choice of Incoterms® were identified by reviewing previous studies and the responses of 12 interviewed enterprises. Next, the importance of the factors was ranked using Fuzzy-AHP method based on expert opinions from semi-structured interview with 4 experts from enterprises with over 10 years of experience. The results highlighted that transportation costs, mode of transport and relationship with trade partners are the most important factors when choosing delivery terms. Regarding the performance of obligations under Incoterms® rules, enterprises reported that the difficulties encountered mainly arose from increasing costs, limited supply of transport services and the imposition of new regulations. The authors propose that future studies should expand the scope of the study and build a recommendation tool for customizing delivery term selections for each contract.</span></li><li><span class="tag tag-sm">This is one of my proudest academic works on campus despite being unrelated to my major of Digital Marketing. Not only does it receive an HD (42.25/50) but also present as an opportunity to express my opinion about a film genre that I really adores: Psychological Thriller. Thank you professor Moore for inspiring me</span></li><li><span class="tag tag-sm">Submitted</span></li><li><span class="tag tag-sm">Applying artificial intelligence (AI) in healthcare presents a significant opportunity to improve public health in low- and middle-income countries (LMICs). However, the successful implementation of such technologies depends not only on these countries’ technical infrastructure but also on their cognitive readiness. This paper reviews the literature on local opinions regarding AI application in healthcare within Southeast Asian LMICs, a rapidly developing region. The review followed the PRISMA Extension for Scoping Reviews (PRISMA-ScR) methodology, using keyword search prompts to gather data from PubMed and Web of Science. Studies older than ten years and those not relevant to the topic were excluded. Three independent researchers conducted the review to minimize bias, with only articles deemed relevant by at least two reviewers included in the final analysis. A total of 13 articles were reviewed, and findings were categorized into three domains: (1) attitudes and satisfaction, (2) acceptance and readiness, and (3) beliefs, judgments, and concerns about AI in healthcare. The review provided insights from various stakeholders, including healthcare professionals and service users. Overall, stakeholders expressed favorable attitudes and high satisfaction with AI applications, with strong acceptance of its potential in healthcare. However, some clinicians and medical students felt unprepared in terms of AI knowledge and experience. While there was a consensus on AI’s future role in healthcare, concerns regarding job security and integration challenges were prevalent. This scoping review underscores the diverse opinions on AI implementation in healthcare in Southeast Asian LMICs and offers recommendations based on these findings.</span></li><li><span class="tag tag-sm">This study aims to contribute to the body of knowledge that the entrepreneurial ecosystem correlates with founders' perceptions and startup success. Five out of six ecosystem factors significantly affect entrepreneurs' perceptions and startups’ success, based on the results of the empirical data. Besides, the founders' perceptions also positively affect the success of a startup.DOI: 10.22146/gamaijb.67416</span></li><li><span class="tag tag-sm">The implementation of Vietnam’s new Land Law, effective from next year, brings significant changes that will shape the landscape for real estate investors, particularly foreign investors, who must navigate these changes strategically.</span></li><li><span class="tag tag-sm">From the perspective of expanding investment, the investor from Hong Kong pumped more than 8.9 million USD for the construction project of GNP Yen Binh Industrial Center in Thai Nguyen, raising the total investment capital of this project to 24.9 million USD.</span></li><li><span class="tag tag-sm">We present SmallPlan -- a novel framework leveraging LLMs as teacher models to train lightweight Small Language Models (SLMs) for high-level path planning tasks. In SmallPlan, the SLMs provide optimal action sequences to navigate across scene graphs that compactly represent full-scaled 3D scenes. The SLMs are trained in a simulation-powered, interleaved manner with LLM-guided supervised fine-tuning (SFT) and reinforcement learning (RL). This strategy not only enables SLMs to successfully complete navigation tasks but also makes them aware of important factors like travel distance and number of trials. Through experiments, we demonstrate that the fine-tuned SLMs perform competitively with larger models like GPT-4o on sequential path planning, without suffering from hallucination and overfitting. SmallPlan is resource-efficient, making it well-suited for edge-device deployment and advancing practical autonomous robotics.</span></li><li><span class="tag tag-sm">This qualitative study explores the experiences of women after cancer treatment in terms of habit changes and mental health impact. The study highlights the need for accessible and scientifically verified information for women after cancer treatment to make informed decisions about their health. It emphasizes the importance of addressing traditional beliefs and promoting evidence-based practices. Moreover, the study underscores the importance of social support and relationships in coping with the challenges of post-cancer experiences.</span></li><li><span class="tag tag-sm">This study explored the QoL of Vietnamese women with cancer and identified key influencing factors, assessing pain levels (Visualized Pain Scale), functional capacity (Karnofsky Performance Status Scale), and QoL (SF12)</span></li><li><span class="tag tag-sm">Saigal Manisha*, Shueh Yi Hannah Ng*, Rameez Nageen Ayesha*, van Manen Siebe*, Van Anh Bui Tr*, Arora Vidhi P.*, Han Kai Ding Max*, Lee Jenelle Qian Tong*, Syaddad Adlan*, Tan Claudia Kexin*, Lim Elisa X. Y. and Wainwright Benjamin J. 2024 Beneath the surface: DNA barcoding of shark fins in Singapore R. Soc. Open Sci.11240532 http://doi.org/10.1098/rsos.240532</span></li><li><span class="tag tag-sm">• First Author of the paper, awarded Top 5 at the National Scientific Conference on Green Tourism Associated with Sustainable Development in the Context of Globalization• The paper proposes a gamified tourism framework to address challenges in Vietnam's tourism industry following the COVID-19 pandemic. It combines blockchain and augmented reality (AR) to revive interest, especially in lesser-known sites. Drawing from the IKEA Effect, tourists engage in a milestone-based system, visiting checkpoints marked by QR codes. Scanning these codes grants non-fungible tokens (NFTs) as proof of attendance and triggers AR experiences, offering interactive and educational content. This approach aims to enhance engagement, promote sustainable practices, and distribute tourism benefits more evenly. The paper includes code and a demo to illustrate the framework's practical implementation and potential impact through real-world examples</span></li><li><span class="tag tag-sm">Low harvested energy poses a significant challenge to sustaining continuous communication in energy harvesting (EH)-powered wireless sensor networks. This is mainly due to intermittent and limited power availability from radio frequency signals. In this paper, we introduce a novel energy-aware resource allocation problem aimed at enabling the asynchronous accumulate-then-transmit protocol, offering an alternative to the extensively studied harvest-then-transmit approach. Specifically, we jointly optimize power allocation and time fraction dedicated to EH to maximize the average long-term system throughput, accounting for both data and energy queue lengths. By leveraging inner approximation and network utility maximization techniques, we develop a simple yet efficient iterative algorithm that guarantees at least a local optimum and achieves long-term utility improvement. Numerical results highlight the proposed approach’s effectiveness in terms of both queue length and sustained system throughput.</span></li><li><span class="tag tag-sm">Gaw NP Industrial Company, investor of GNP Yen Binh Industrial Center Project, said that the company is preparing to expand the area of ​​ready-built factories of GNP Industrial Center.</span></li><li><span class="tag tag-sm">This paper explores the potential of Radio Frequency Identification (RFID) technology to improve sustainability in Vietnam's fashion and textile supply chain. It highlights the benefits, including supply chain transformation, and challenges, including environmental concerns and cybersecurity risks. The study suggests adopting ECO and Sewed Chipless RFID tags to address these issues and promote a more sustainable and secure supply chain.</span></li><li><span class="tag tag-sm">This study aimed to explore SRH education in Vietnam and identify factors influencing access and participation in education programmes. A qualitative study was conducted in March 2022 in Son La province, a Vietnamese mountainous region.</span></li><li><span class="tag tag-sm">Chu LH, Chau CQ, Kamel N, Thanh HHT and Yahya N (2024) Functional excitation-inhibition ratio for social anxiety analysis and severity assessment. Front. Psychiatry 15:1461290. doi: 10.3389/fpsyt.2024.1461290</span></li><li><span class="tag tag-sm">Mental health is not as simple as not having a mental illness, it is the ability to balance emotions, thoughts and behaviors in everyday life. However, in Vietnam, mental health is still misunderstood, and people who are living with mental health difficulties often face judgement and discrimination from other people. This makes it harder for students and families to find support, making young people feel like they have to face academic stress, school bullying and family conflict all on their own. Just like physical health, mental health is also important for students’ well-being and development.As teachers interact with students everyday, they play an important role in students’ mental health care. If equipped with tools to identify early signs of mental health difficulties, teachers would be able to support or guide their students on how to find professional help. Additionally, mental health literacy can be very important for teachers to learn how to take care of their own mental health, reduce stressand increase resiliency to pressure from their teaching job.</span></li><li><span class="tag tag-sm">Through the evolution of technology and the rise of Artificial Intelligence, Virtual Influencers (VIs) have emerged as an innovative marketing strategy. However, the concept of VIs remains novel in Vietnam, particularly regarding how the effectiveness of VI-endorsed content on social media may vary across different persuasive cues. This study aims to investigate how central cues (argument quality) and peripheral cues (social attractiveness, physical attractiveness, and attitude homophily) of virtual endorsers influence the purchase intentions of Generation Z while exploring the moderating role of speciesism in these relationships.</span></li><li><span class="tag tag-sm">In Organic and Hybrid Sensors and Bioelectronics XIV</span></li><li><span class="tag tag-sm">This study evaluates the effectiveness of a training program on mental health literacy (MHL) outcomes among participating nurses. A mixed method approach was used. Quantitative data were collected with pre- and posttraining MHL assessment surveys. Qualitative data were gathered through semistructured interviews to evaluate the acceptability of the training program.</span></li><li><span class="tag tag-sm">This work implements an Equivariant Graph Neural Network in semantic scene graph generation from 3D point clouds. Our method, ESGNN, outperforms existing approaches, demonstrating improvement in scene estimation with faster convergence. ESGNN demands low computational resources and is easy to implement.</span></li><li><span class="tag tag-sm">While numerous surveys focus on adversarial attacks in image classification, analyses of such attacks on object detection systems remain limited. We propose a novel taxonomic framework for categorizing adversarial attacks on object detection architectures, and evaluate state-of-the-art attacks on both traditional and modern vision-language pretrained detectors.</span></li><li><span class="tag tag-sm">Have the opportunity to assist and learn from my professor Minh Doan via this research - on improving fault detection method on solar panels using aerial thermal imaging and deep learning.</span></li><li><span class="tag tag-sm">My first publication, &quot;A Quarter of Loss for the Real Estate Industry in Vietnam,&quot; came out in the peer-reviewed journal, Journal of Financial Investment, (Tap Chi Dau Tu Tai Chinh), vol. 2, 2021. I researched and gathered data from some experts to support my prediction for the Vietnamese real estate industry.</span></li><li><span class="tag tag-sm">Art has long been an important subject of the education system. In Vietnam, teaching arts is taken a solid position as a subject of the education system from primary to tertiary education level. However, little is known about the situation and the need for transformation in the way students are trained to become art teachers. To clarify the view and attitudes of the to-be-an-art-teacher students, we conducted an online survey to collect data from students who enrolled in the bachelor course, majoring in art teaching at a university in Vietnam. A total of 57 students participated in the survey, most of them are females in the second year of the on-the-job B.A. course. The results showed that the respondents reported needing more diversified learning content such as applied arts, installation, and multimedia. They showed a need to have more practice sessions and fieldwork such as visiting museums and exhibitions. The respondents specified that they chose this major because they love the subject and love teaching, as well as to address the social need of learning arts, as arts seem to be a more important subject for elementary education. They shared a positive attitude toward the internationalization of local art education, however, none of them plan to study abroad. These findings imply the need for improving the quality of teaching and internationalization of art teacher education to meet international standards in the context of a developing country.</span></li><li><span class="tag tag-sm">Information from The Management Board of Long An Economic Zone shows that in the past months of 2020, the province has 56 new projects investing in industrial parks. Specifically, there are 41 FDI projects and 15 domestic projects (DDI) with a total new investment capital of USD 219.5 million and VND 688 billion. At the same time, there are 37 adjusted projects with capital increase of USD 48.2 million and VND 2,341 billion. Many enterprises have been starting to build and develop large-scale industrial parks in Long An, waiting for the wave of movement and expansion of production of foreign investors.</span></li><li><span class="tag tag-sm">We introduce a temporal graph-matching framework that leverages the symmetry-preserving properties of ESGNN (our previous work) to fuse scene graphs across multiple sequences into a unified global representation. This approach offers a scalable and robust solution for complex multi-view scene understanding.</span></li><li><span class="tag tag-sm">Comparative opinion mining is a specialized field of sentiment analysis that aims to identify and extract sentiments expressed comparatively. To address this task, we propose an approach that consists of solving three sequential sub-tasks: (i) identifying comparative sentence, i.e., if a sentence has a comparative meaning, (ii) extracting comparative elements, i.e., what are comparison subjects, objects, aspects, predicates, and (iii) classifying comparison types which contribute to a deeper comprehension of user sentiments in Vietnamese product reviews. Our method is ranked fifth at the Vietnamese Language and Speech Processing (VLSP) 2023 challenge on Comparative Opinion Mining (ComOM) from Vietnamese Product Reviews.</span></li><li><span class="tag tag-sm">Client–server security faces significant challenges, including the risk of Man-in-the-Middle attacks (MITM), data confidentiality, integrity, authentication concerns, and the need to adapt to evolving client and server environments. The growing complexity of systems competes with these challenges, necessitating ongoing security improvements to protect data and maintain trust in client-server interactions. This study examines a novel client-server authentication mechanism to ensure secure login and mitigate potential attacks, such as MITM attacks. The impetus behind this study was to tackle the escalating menace of cyber assaults and information breaches, which can lead to monetary losses and harm both individuals and entities.</span></li><li><span class="tag tag-sm">According to Colliers International, the asking price for industrial land in Ho Chi Minh City. Ho Chi Minh City has reached 300 USD/m2, the highest in the country. This makes businesses tend to look to the provinces. In which, Long An is forecasted to supply the market with many industrial parks in the next 3-5 years. Assessing the Long An market, Ms. Vu Anh, Business Development Manager - Colliers International in Vietnam, said that Long An has the advantage in terms of population (2 million people), and belongs to the minimum wage region II. should be more competitive in terms of human resources than Binh Duong and Dong Nai. This is very attractive to labor-intensive industries such as apparel and footwear.</span></li><li><span class="tag tag-sm">Book Chapter in &quot;Navigating Computing Challenges for a Sustainable World&quot;, 2024</span></li><li><span class="tag tag-sm">This study focalises on learning and creativity, pivotal facets for entrepreneurial accomplishment, and advances a theoretical framework elucidating the startup ecosystem’s role in organisational learning and creativity. Employing SmartPLS 3.0 and PLS-SEM methodology, empirical analysis unveils significant impacts: two ecosystem factors and organisational learning and creativity influence entrepreneurial success. Organisational learning engenders notable effects from the accessible market and workforce, while creativity draws impetus from accessible market, education and training, and support systems. Notably, organisational learning bolsters creativity within startups. These insights carry implications for catalysing regional entrepreneurship.</span></li><li><span class="tag tag-sm">The article described about my studying abroad journey in Europe, redirecting from Germany to the Netherlands.</span></li></ul></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column publications">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;date&quot;: &quot;April 4, 2025&quot;,
+  &quot;description&quot;: &quot;Book Chapter in \&quot;Navigating Computing Challenges for a Sustainable World\&quot;, 2024&quot;,
+  &quot;subtitle&quot;: &quot;IGI Global&quot;,
+  &quot;title&quot;: &quot;Ch. 19: An Adaptive AutoLearning System for Camera-Based Facial Recognition.&quot;
+}</pre>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-17">
+        <header class="col-header">
+          <h2 id="col-17">patents</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for patents">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-danger" aria-label="Presence: 0.03% — low">0.03%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column patents">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column patents">
+              <caption class="sr-only">Nested schema fields for column patents</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-mandatory">
+                <th scope="row">date_issued <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">1</td>
+                <td><ul class="tag-list" aria-label="1 unique value"><li><span class="tag tag-sm">November 11, 2020</span></li></ul></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">description <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">1</td>
+                <td><ul class="tag-list" aria-label="1 unique value"><li><span class="tag tag-sm">Utility solution refers to an irrigation system, which automatically adjusts the amount of irrigation water to maintain the installed humidity level via Web or Bluetooth.</span></li></ul></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">patents_id <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">1</td>
+                <td><ul class="tag-list" aria-label="1 unique value"><li><span class="tag tag-sm">VN 2-2019-00220</span></li></ul></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">title <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">1</td>
+                <td><ul class="tag-list" aria-label="1 unique value"><li><span class="tag tag-sm">Automatic Irrigation System </span></li></ul></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column patents">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;date_issued&quot;: &quot;November 11, 2020&quot;,
+  &quot;description&quot;: &quot;Utility solution refers to an irrigation system, which automatically adjusts the amount of irrigation water to maintain the installed humidity level via Web or Bluetooth.&quot;,
+  &quot;patents_id&quot;: &quot;VN 2-2019-00220&quot;,
+  &quot;title&quot;: &quot;Automatic Irrigation System &quot;
+}</pre>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-18">
+        <header class="col-header">
+          <h2 id="col-18">projects</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for projects">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-danger" aria-label="Presence: 17.81% — low">17.81%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column projects">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column projects">
+              <caption class="sr-only">Nested schema fields for column projects</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-even">
+                <th scope="row">description<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 89.99441% — high">89.99441%</span></td>
+                <td class="center">1,593</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">title <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">1,765</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-even">
+                <th scope="row">end_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 84.62828% — high">84.62828%</span></td>
+                <td class="center">108</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">start_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 89.71492% — high">89.71492%</span></td>
+                <td class="center">120</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column projects">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;description&quot;: &quot;GAC DO. is a non-profit project established on January 1st, 2021. With the inherent youth of Gen Z, GAC DO. was founded with the desire to maintain the spirit of national culture and to preserve, develop the old values of the country. Culture exists in all aspects of life, and there are perspectives that need to be spread more widely - GAC DO. hopes to take you “upstream” to explore what you might have missed...&quot;,
+  &quot;end_date&quot;: &quot;Apr 2022&quot;,
+  &quot;start_date&quot;: &quot;Jul 2021&quot;,
+  &quot;title&quot;: &quot;GAC DO Culture Season 2&quot;
+}</pre>
+        </section>
+      </article>
+
+      <article class="col-card" aria-labelledby="col-19">
+        <header class="col-header">
+          <h2 id="col-19">organizations</h2>
+          <span class="pill-type" aria-label="Type: json_structure">json_structure</span>
+        </header>
+        
+        <dl class="metrics" aria-label="Summary metrics for organizations">
+          <div class="metric">
+            <dt>Column presence</dt>
+            <dd><span class="badge badge-danger" aria-label="Presence: 3.81% — low">3.81%</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Unique count</dt>
+            <dd><span class="badge badge-neutral" aria-label="0 unique values">0</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Example value</dt>
+            <dd><span class="muted" aria-label="No example">—</span></dd>
+          </div>
+        </dl>
+        
+        <section aria-label="Nested schema for column organizations">
+          <h3>Nested schema</h3>
+          
+          <div class="table-wrap">
+            <table aria-label="Nested schema for column organizations">
+              <caption class="sr-only">Nested schema fields for column organizations</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col" class="center">Presence</th>
+                  <th scope="col" class="center">Unique count</th>
+                  <th scope="col">Unique values</th>
+                </tr>
+              </thead>
+              <tbody>
+              <tr class="row-even">
+                <th scope="row">end_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 97.27626% — high">97.27626%</span></td>
+                <td class="center">74</td>
+                <td><ul class="tag-list" aria-label="74 unique values"><li><span class="tag tag-sm">Mar 2021</span></li><li><span class="tag tag-sm">Aug 2021</span></li><li><span class="tag tag-sm">May 2024</span></li><li><span class="tag tag-sm">Oct 2018</span></li><li><span class="tag tag-sm">Sep 2020</span></li><li><span class="tag tag-sm">Nov 2022</span></li><li><span class="tag tag-sm">Nov 2018</span></li><li><span class="tag tag-sm">Nov 2020</span></li><li><span class="tag tag-sm">Feb 2024</span></li><li><span class="tag tag-sm">Apr 2024</span></li><li><span class="tag tag-sm">Jan 2019</span></li><li><span class="tag tag-sm">2024</span></li><li><span class="tag tag-sm">Jun 2017</span></li><li><span class="tag tag-sm">Jul 2021</span></li><li><span class="tag tag-sm">Sep 2021</span></li><li><span class="tag tag-sm">Jul 2013</span></li><li><span class="tag tag-sm">Sep 2024</span></li><li><span class="tag tag-sm">Jun 2020</span></li><li><span class="tag tag-sm">2018</span></li><li><span class="tag tag-sm">Dec 2020</span></li><li><span class="tag tag-sm">Aug 2023</span></li><li><span class="tag tag-sm">Aug 2024</span></li><li><span class="tag tag-sm">Jul 2022</span></li><li><span class="tag tag-sm">Nov 2019</span></li><li><span class="tag tag-sm">Feb 2021</span></li><li><span class="tag tag-sm">Mar 2023</span></li><li><span class="tag tag-sm">Dec 2018</span></li><li><span class="tag tag-sm">Oct 2022</span></li><li><span class="tag tag-sm">Sep 2014</span></li><li><span class="tag tag-sm">Mar 2025</span></li><li><span class="tag tag-sm">Jun 2019</span></li><li><span class="tag tag-sm">Apr 2021</span></li><li><span class="tag tag-sm">Jan 2024</span></li><li><span class="tag tag-sm">Jun 2023</span></li><li><span class="tag tag-sm">Dec 2021</span></li><li><span class="tag tag-sm">May 2023</span></li><li><span class="tag tag-sm">2020</span></li><li><span class="tag tag-sm">Jul 2017</span></li><li><span class="tag tag-sm">Aug 2019</span></li><li><span class="tag tag-sm">Jul 2023</span></li><li><span class="tag tag-sm">Nov 2024</span></li><li><span class="tag tag-sm">Jul 2020</span></li><li><span class="tag tag-sm">Feb 2022</span></li><li><span class="tag tag-sm">Aug 2020</span></li><li><span class="tag tag-sm">Jul 2025</span></li><li><span class="tag tag-sm">Sep 2019</span></li><li><span class="tag tag-sm">Oct 2021</span></li><li><span class="tag tag-sm">May 2022</span></li><li><span class="tag tag-sm">Jul 2024</span></li><li><span class="tag tag-sm">May 2020</span></li><li><span class="tag tag-sm">Dec 2022</span></li><li><span class="tag tag-sm">Sep 2023</span></li><li><span class="tag tag-sm">Aug 2022</span></li><li><span class="tag tag-sm">Apr 2022</span></li><li><span class="tag tag-sm">Jun 2018</span></li><li><span class="tag tag-sm">Jan 2021</span></li><li><span class="tag tag-sm">Sep 2022</span></li><li><span class="tag tag-sm">May 2021</span></li><li><span class="tag tag-sm">2023</span></li><li><span class="tag tag-sm">Oct 2020</span></li><li><span class="tag tag-sm">Oct 2019</span></li><li><span class="tag tag-sm">Jan 2023</span></li><li><span class="tag tag-sm">2021</span></li><li><span class="tag tag-sm">Mar 2022</span></li><li><span class="tag tag-sm">May 2019</span></li><li><span class="tag tag-sm">Jan 2022</span></li><li><span class="tag tag-sm">Nov 2021</span></li><li><span class="tag tag-sm">Present</span></li><li><span class="tag tag-sm">Dec 2019</span></li><li><span class="tag tag-sm">Jun 2022</span></li><li><span class="tag tag-sm">Feb 2023</span></li><li><span class="tag tag-sm">Jun 2021</span></li><li><span class="tag tag-sm">Oct 2023</span></li><li><span class="tag tag-sm">Jan 2020</span></li></ul></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">membership_number<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-danger" aria-label="Presence: 0.0% — low">0.0%</span></td>
+                <td class="center"><span class="muted" aria-label="Not available">—</span></td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">membership_type <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">195</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">start_date<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-info" aria-label="Presence: 97.27626% — high">97.27626%</span></td>
+                <td class="center">90</td>
+                <td><ul class="tag-list" aria-label="90 unique values"><li><span class="tag tag-sm">2017</span></li><li><span class="tag tag-sm">May 2018</span></li><li><span class="tag tag-sm">Sep 2020</span></li><li><span class="tag tag-sm">Jan 2017</span></li><li><span class="tag tag-sm">Jul 2018</span></li><li><span class="tag tag-sm">Jun 2025</span></li><li><span class="tag tag-sm">Nov 2017</span></li><li><span class="tag tag-sm">Dec 2020</span></li><li><span class="tag tag-sm">Aug 2023</span></li><li><span class="tag tag-sm">Jul 2022</span></li><li><span class="tag tag-sm">Nov 2019</span></li><li><span class="tag tag-sm">Jul 2023</span></li><li><span class="tag tag-sm">2020</span></li><li><span class="tag tag-sm">Aug 2019</span></li><li><span class="tag tag-sm">Feb 2022</span></li><li><span class="tag tag-sm">May 2022</span></li><li><span class="tag tag-sm">Dec 2022</span></li><li><span class="tag tag-sm">Sep 2023</span></li><li><span class="tag tag-sm">Aug 2022</span></li><li><span class="tag tag-sm">Jan 2021</span></li><li><span class="tag tag-sm">Sep 2022</span></li><li><span class="tag tag-sm">May 2021</span></li><li><span class="tag tag-sm">Oct 2020</span></li><li><span class="tag tag-sm">Jul 2019</span></li><li><span class="tag tag-sm">Feb 2023</span></li><li><span class="tag tag-sm">Apr 2017</span></li><li><span class="tag tag-sm">Oct 2018</span></li><li><span class="tag tag-sm">Nov 2022</span></li><li><span class="tag tag-sm">Nov 2020</span></li><li><span class="tag tag-sm">Sep 2011</span></li><li><span class="tag tag-sm">Feb 2021</span></li><li><span class="tag tag-sm">Mar 2023</span></li><li><span class="tag tag-sm">Jun 2015</span></li><li><span class="tag tag-sm">Jun 2023</span></li><li><span class="tag tag-sm">Jul 2020</span></li><li><span class="tag tag-sm">Aug 2020</span></li><li><span class="tag tag-sm">Sep 2019</span></li><li><span class="tag tag-sm">Jul 2024</span></li><li><span class="tag tag-sm">Apr 2022</span></li><li><span class="tag tag-sm">Jun 2018</span></li><li><span class="tag tag-sm">Jul 2016</span></li><li><span class="tag tag-sm">Dec 2019</span></li><li><span class="tag tag-sm">Jun 2022</span></li><li><span class="tag tag-sm">Jun 2021</span></li><li><span class="tag tag-sm">May 2024</span></li><li><span class="tag tag-sm">Jan 2018</span></li><li><span class="tag tag-sm">Jun 2017</span></li><li><span class="tag tag-sm">Jan 2019</span></li><li><span class="tag tag-sm">Jul 2021</span></li><li><span class="tag tag-sm">Jun 2024</span></li><li><span class="tag tag-sm">Apr 2020</span></li><li><span class="tag tag-sm">Dec 2018</span></li><li><span class="tag tag-sm">Oct 2022</span></li><li><span class="tag tag-sm">Feb 2025</span></li><li><span class="tag tag-sm">Mar 2020</span></li><li><span class="tag tag-sm">Apr 2021</span></li><li><span class="tag tag-sm">Dec 2021</span></li><li><span class="tag tag-sm">May 2023</span></li><li><span class="tag tag-sm">Oct 2021</span></li><li><span class="tag tag-sm">May 2017</span></li><li><span class="tag tag-sm">2023</span></li><li><span class="tag tag-sm">Oct 2019</span></li><li><span class="tag tag-sm">Mar 2022</span></li><li><span class="tag tag-sm">Jan 2022</span></li><li><span class="tag tag-sm">May 2019</span></li><li><span class="tag tag-sm">Jan 2016</span></li><li><span class="tag tag-sm">Mar 2021</span></li><li><span class="tag tag-sm">Aug 2021</span></li><li><span class="tag tag-sm">Feb 2020</span></li><li><span class="tag tag-sm">Nov 2018</span></li><li><span class="tag tag-sm">Feb 2024</span></li><li><span class="tag tag-sm">Feb 2017</span></li><li><span class="tag tag-sm">Sep 2021</span></li><li><span class="tag tag-sm">Jun 2020</span></li><li><span class="tag tag-sm">Aug 2024</span></li><li><span class="tag tag-sm">Oct 2017</span></li><li><span class="tag tag-sm">Jun 2019</span></li><li><span class="tag tag-sm">Mar 2024</span></li><li><span class="tag tag-sm">Aug 2018</span></li><li><span class="tag tag-sm">Jan 2014</span></li><li><span class="tag tag-sm">Sep 2016</span></li><li><span class="tag tag-sm">2019</span></li><li><span class="tag tag-sm">May 2020</span></li><li><span class="tag tag-sm">Nov 2023</span></li><li><span class="tag tag-sm">2013</span></li><li><span class="tag tag-sm">Mar 2016</span></li><li><span class="tag tag-sm">Jan 2023</span></li><li><span class="tag tag-sm">Nov 2021</span></li><li><span class="tag tag-sm">Jul 2011</span></li><li><span class="tag tag-sm">Oct 2023</span></li></ul></td>
+              </tr>
+              <tr class="row-mandatory">
+                <th scope="row">title <span class="pill-mandatory" aria-hidden="true">mandatory</span><span class="sr-only"> (mandatory)</span></th>
+                <td class="center"><span class="badge badge-success" aria-label="Presence: 100.0% — complete">100.0%</span></td>
+                <td class="center">239</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              <tr class="row-odd">
+                <th scope="row">description<span class="sr-only"> (optional)</span></th>
+                <td class="center"><span class="badge badge-warning" aria-label="Presence: 54.47471% — partial">54.47471%</span></td>
+                <td class="center">139</td>
+                <td><span class="muted" aria-label="No unique values">—</span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-label="Representative example for column organizations">
+          <h3>Representative example</h3>
+          <pre class="code-dark" aria-label="Representative JSON example">{
+  &quot;description&quot;: &quot;The Youth Union of Kim Lien High School is a organization to develop political-ideological training and learning activities for Ho Chi Minh Communist Youth Union and also to encourage young student enthusiasm through activities, meaningful and interesting extracurricular.During my first term, I participated in learning and experiencing activities as a member of the organization.The second term, in this year I ran for election and being a member of Executive Board of Ho Chi Minh Communist Youth Union Of Kim Lien High School. Be creatively involved in planning and organizing activities in various artistic and academic fields for students and the school (Ngay Hoi Tuoi Tre - Youth Day 2021, Project 12 2021: Starwort). Providing an appropriate playground for students at high school, every student interacts enthusiastically to all arranged activities and events.&quot;,
+  &quot;end_date&quot;: &quot;Dec 2021&quot;,
+  &quot;membership_number&quot;: null,
+  &quot;membership_type&quot;: &quot;Standing Committee - Executive Board&quot;,
+  &quot;start_date&quot;: &quot;Sep 2019&quot;,
+  &quot;title&quot;: &quot;Ho Chi Minh Youth Communist Union of Kim Lien Highschool&quot;
+}</pre>
+        </section>
+      </article>
+    </main>
+
+    <footer class="page-footer">
+      Data source: final_structure.json
+    </footer>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,284 @@
+nohup: ignoring input
+[I 2026-05-17 22:16:27.360 ServerApp] jupyter_lsp | extension was successfully linked.
+[I 2026-05-17 22:16:27.367 ServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2026-05-17 22:16:27.375 ServerApp] jupyterlab | extension was successfully linked.
+[I 2026-05-17 22:16:27.382 ServerApp] notebook | extension was successfully linked.
+[I 2026-05-17 22:16:27.771 ServerApp] notebook_shim | extension was successfully linked.
+[I 2026-05-17 22:16:27.771 ServerApp] panel.io.jupyter_server_extension | extension was successfully linked.
+[I 2026-05-17 22:16:27.798 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2026-05-17 22:16:27.801 ServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2026-05-17 22:16:27.802 ServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2026-05-17 22:16:27.806 LabApp] JupyterLab extension loaded from /home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab
+[I 2026-05-17 22:16:27.806 LabApp] JupyterLab application directory is /home/danghoa/graph-database/jupyter_env/share/jupyter/lab
+[I 2026-05-17 22:16:27.807 LabApp] Extension Manager is 'pypi'.
+[I 2026-05-17 22:16:27.938 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2026-05-17 22:16:27.945 ServerApp] notebook | extension was successfully loaded.
+[I 2026-05-17 22:16:27.946 ServerApp] panel.io.jupyter_server_extension | extension was successfully loaded.
+[I 2026-05-17 22:16:27.948 ServerApp] Serving notebooks from local directory: /home/danghoa/graph-database
+[I 2026-05-17 22:16:27.949 ServerApp] Jupyter Server 2.17.0 is running at:
+[I 2026-05-17 22:16:27.949 ServerApp] http://linkedInGraphDatabase:8888/lab?token=9ecedf0b0938dd1bb0cc5af7da725b53c6c3189b10e6bf17
+[I 2026-05-17 22:16:27.949 ServerApp]     http://127.0.0.1:8888/lab?token=9ecedf0b0938dd1bb0cc5af7da725b53c6c3189b10e6bf17
+[I 2026-05-17 22:16:27.949 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 2026-05-17 22:16:27.953 ServerApp] 
+    
+    To access the server, open this file in a browser:
+        file:///home/danghoa/.local/share/jupyter/runtime/jpserver-160070-open.html
+    Or copy and paste one of these URLs:
+        http://linkedInGraphDatabase:8888/lab?token=9ecedf0b0938dd1bb0cc5af7da725b53c6c3189b10e6bf17
+        http://127.0.0.1:8888/lab?token=9ecedf0b0938dd1bb0cc5af7da725b53c6c3189b10e6bf17
+[I 2026-05-17 22:16:28.508 ServerApp] Skipped non-installed server(s): basedpyright, bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyrefly, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[W 2026-05-17 22:16:44.199 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/fresh-graduate-filtering.ipynb?content=0&hash=0&1779031004112 (ea17f88530d14ee6a197ee2b48b87b62@100.84.182.234) 3.49ms referer=http://100.84.149.199:8888/lab/tree/notebooks/stats.ipynb
+[W 2026-05-17 22:16:44.199 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/fresh-graduate-filtering.ipynb?content=0&hash=0&1779031004112 (100.84.182.234): No such file or directory: notebooks/Career Services Work/fresh-graduate-filtering.ipynb
+[W 2026-05-17 22:16:44.230 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/fresh-graduate-filtering.ipynb?content=0&hash=0&1779031004113 (ea17f88530d14ee6a197ee2b48b87b62@100.84.182.234) 1.14ms referer=http://100.84.149.199:8888/lab/tree/notebooks/stats.ipynb
+[W 2026-05-17 22:16:44.230 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/fresh-graduate-filtering.ipynb?content=0&hash=0&1779031004113 (100.84.182.234): No such file or directory: notebooks/Career Services Work/fresh-graduate-filtering.ipynb
+[W 2026-05-17 22:16:44.502 LabApp] The extension "jupyterlab-dash" is outdated.
+    
+[I 2026-05-17 22:16:44.533 LabApp] Build is up to date
+[W 2026-05-17 22:16:45.930 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/fresh-graduate-filtering.ipynb?content=0&hash=0&1779031005848 (ea17f88530d14ee6a197ee2b48b87b62@100.84.182.234) 4.07ms referer=http://100.84.149.199:8888/lab
+[W 2026-05-17 22:16:45.930 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/fresh-graduate-filtering.ipynb?content=0&hash=0&1779031005848 (100.84.182.234): No such file or directory: notebooks/Career Services Work/fresh-graduate-filtering.ipynb
+[W 2026-05-17 22:16:45.969 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/fresh-graduate-filtering.ipynb?content=0&hash=0&1779031005849 (ea17f88530d14ee6a197ee2b48b87b62@100.84.182.234) 2.03ms referer=http://100.84.149.199:8888/lab
+[W 2026-05-17 22:16:45.969 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/fresh-graduate-filtering.ipynb?content=0&hash=0&1779031005849 (100.84.182.234): No such file or directory: notebooks/Career Services Work/fresh-graduate-filtering.ipynb
+[W 2026-05-17 22:16:46.118 LabApp] The extension "jupyterlab-dash" is outdated.
+    
+[I 2026-05-17 22:16:46.221 LabApp] Build is up to date
+[I 2026-05-17 22:16:46.487 ServerApp] Kernel started: 89f1114f-1307-4295-9d14-23c1148460d8
+[I 2026-05-17 22:16:46.488 ServerApp] Kernel started: 0f0a92bd-60be-431f-9185-aa7388e6bbd1
+[I 2026-05-17 22:16:46.500 ServerApp] Kernel started: 185893d0-7876-4656-a674-c89bb0587aba
+[I 2026-05-17 22:16:47.368 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-17 22:16:47.370 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[W 2026-05-17 22:16:47.373 ServerApp] The websocket_ping_timeout (90000) cannot be longer than the websocket_ping_interval (30000).
+    Setting websocket_ping_timeout=30000
+[I 2026-05-17 22:16:47.413 ServerApp] Starting buffering for 185893d0-7876-4656-a674-c89bb0587aba:9ae18498-35d9-41c7-a0e0-316d585da1e0
+[I 2026-05-17 22:16:47.527 ServerApp] Adapting from protocol version 5.3 (kernel 89f1114f-1307-4295-9d14-23c1148460d8) to 5.4 (client).
+[I 2026-05-17 22:16:47.528 ServerApp] Connecting to kernel 89f1114f-1307-4295-9d14-23c1148460d8.
+[I 2026-05-17 22:16:47.576 ServerApp] Adapting from protocol version 5.3 (kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1) to 5.4 (client).
+[I 2026-05-17 22:16:47.578 ServerApp] Connecting to kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1.
+[I 2026-05-17 22:16:47.617 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-17 22:16:47.619 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[I 2026-05-17 22:16:47.665 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-17 22:16:47.666 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[E 2026-05-17 22:16:50.787 ServerApp] Uncaught exception GET /lab/api/extensions?query&page=1&per_page=30&refresh=0&1779031007035 (100.84.182.234)
+    HTTPServerRequest(protocol='http', host='100.84.149.199:8888', method='GET', uri='/lab/api/extensions?query&page=1&per_page=30&refresh=0&1779031007035', version='HTTP/1.1', remote_ip='100.84.182.234')
+    Traceback (most recent call last):
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+        yield
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+        resp = await self._pool.handle_async_request(req)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+        raise exc from None
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+        response = await connection.handle_async_request(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+        return await self._connection.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+        raise exc
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+        ) = await self._receive_response_headers(**kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+        event = await self._receive_event(timeout=timeout)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+        data = await self._network_stream.read(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_backends/anyio.py", line 32, in read
+        with map_exceptions(exc_map):
+      File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+        self.gen.throw(value)
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+        raise to_exc(exc) from exc
+    httpcore.ReadError
+    
+    The above exception was the direct cause of the following exception:
+    
+    Traceback (most recent call last):
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/tornado/web.py", line 1859, in _execute
+        result = await result
+                 ^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/handlers/extension_manager_handler.py", line 37, in get
+        extensions, last_page = await self.manager.list_extensions(query, page, per_page)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/manager.py", line 474, in list_extensions
+        await self.refresh(query, page, per_page)
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/manager.py", line 508, in refresh
+        await self._update_extensions_list(query, page, per_page)
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/manager.py", line 681, in _update_extensions_list
+        extensions, last_page = await self.list_packages(query, page, per_page)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/pypi.py", line 283, in list_packages
+        data = await self._fetch_package_metadata(name, latest_version, self.base_url)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/async_lru/__init__.py", line 247, in __call__
+        return await self._shield_and_handle_cancelled_error(cache_item, key)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/async_lru/__init__.py", line 201, in _shield_and_handle_cancelled_error
+        return await asyncio.shield(task)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/pypi.py", line 96, in _fetch_package_metadata
+        response = await client.get(
+                   ^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1768, in get
+        return await self.request(
+               ^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1540, in request
+        return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1629, in send
+        response = await self._send_handling_auth(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+        response = await self._send_handling_redirects(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+        response = await self._send_single_request(request)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1730, in _send_single_request
+        response = await transport.handle_async_request(request)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+        with map_httpcore_exceptions():
+      File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+        self.gen.throw(value)
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+        raise mapped_exc(message) from exc
+    httpx.ReadError
+[W 2026-05-17 22:16:50.801 ServerApp] wrote error: 'Unhandled error'
+    Traceback (most recent call last):
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+        yield
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+        resp = await self._pool.handle_async_request(req)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+        raise exc from None
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+        response = await connection.handle_async_request(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+        return await self._connection.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+        raise exc
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+        ) = await self._receive_response_headers(**kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+        event = await self._receive_event(timeout=timeout)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+        data = await self._network_stream.read(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_backends/anyio.py", line 32, in read
+        with map_exceptions(exc_map):
+      File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+        self.gen.throw(value)
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+        raise to_exc(exc) from exc
+    httpcore.ReadError
+    
+    The above exception was the direct cause of the following exception:
+    
+    Traceback (most recent call last):
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/tornado/web.py", line 1859, in _execute
+        result = await result
+                 ^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/handlers/extension_manager_handler.py", line 37, in get
+        extensions, last_page = await self.manager.list_extensions(query, page, per_page)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/manager.py", line 474, in list_extensions
+        await self.refresh(query, page, per_page)
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/manager.py", line 508, in refresh
+        await self._update_extensions_list(query, page, per_page)
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/manager.py", line 681, in _update_extensions_list
+        extensions, last_page = await self.list_packages(query, page, per_page)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/pypi.py", line 283, in list_packages
+        data = await self._fetch_package_metadata(name, latest_version, self.base_url)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/async_lru/__init__.py", line 247, in __call__
+        return await self._shield_and_handle_cancelled_error(cache_item, key)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/async_lru/__init__.py", line 201, in _shield_and_handle_cancelled_error
+        return await asyncio.shield(task)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/jupyterlab/extensions/pypi.py", line 96, in _fetch_package_metadata
+        response = await client.get(
+                   ^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1768, in get
+        return await self.request(
+               ^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1540, in request
+        return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1629, in send
+        response = await self._send_handling_auth(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+        response = await self._send_handling_redirects(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+        response = await self._send_single_request(request)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_client.py", line 1730, in _send_single_request
+        response = await transport.handle_async_request(request)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+        with map_httpcore_exceptions():
+      File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+        self.gen.throw(value)
+      File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+        raise mapped_exc(message) from exc
+    httpx.ReadError
+[E 2026-05-17 22:16:50.805 ServerApp] {
+      "Host": "100.84.149.199:8888",
+      "Accept": "*/*",
+      "Referer": "http://100.84.149.199:8888/lab",
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+    }
+[E 2026-05-17 22:16:50.805 ServerApp] 500 GET /lab/api/extensions?query&page=1&per_page=30&refresh=0&1779031007035 (ea17f88530d14ee6a197ee2b48b87b62@100.84.182.234) 3700.51ms referer=http://100.84.149.199:8888/lab
+[I 2026-05-17 22:17:33.517 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-17 22:17:41.460 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-17 22:18:11.554 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-17 22:18:25.111 ServerApp] Saving file at /notebooks/Career Services Work/dictionary.ipynb
+[W 2026-05-17 22:18:42.206 ServerApp] delete /notebooks/Data
+[I 2026-05-17 22:18:54.264 ServerApp] Saving file at /notebooks/Career Services Work/dictionary.ipynb
+[I 2026-05-17 22:19:21.957 ServerApp] Saving file at /notebooks/Career Services Work/dictionary.ipynb
+[I 2026-05-17 22:19:32.246 ServerApp] Saving file at /notebooks/Career Services Work/dictionary.ipynb
+[I 2026-05-17 22:20:02.997 ServerApp] Saving file at /notebooks/Career Services Work/dictionary.ipynb
+Traceback (most recent call last):
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 3678, in _complete
+    result = matcher(context)
+             ^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2214, in file_matcher
+    code_until_cursor = self._extract_code(context.text_until_cursor)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2316, in _extract_code
+    maybe_magic, *rest = line.split(maxsplit=1)
+    ^^^^^^^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected at least 1, got 0)
+[I 2026-05-17 22:24:05.074 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+Traceback (most recent call last):
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 3678, in _complete
+    result = matcher(context)
+             ^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2214, in file_matcher
+    code_until_cursor = self._extract_code(context.text_until_cursor)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/danghoa/graph-database/jupyter_env/lib/python3.12/site-packages/IPython/core/completer.py", line 2316, in _extract_code
+    maybe_magic, *rest = line.split(maxsplit=1)
+    ^^^^^^^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected at least 1, got 0)
+[I 2026-05-17 22:24:28.273 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[W 2026-05-17 22:24:34.495 ServerApp] delete /notebooks/Career Services Work/fresh-grad-filter.csv
+[W 2026-05-17 22:24:37.993 ServerApp] delete /notebooks/Career Services Work/filter_structure.json
+[W 2026-05-17 22:24:44.835 ServerApp] delete /notebooks/Career Services Work/dataset_structure.html
+[I 2026-05-17 22:24:58.360 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-17 22:25:08.023 ServerApp] Saving file at /notebooks/Career Services Work/dictionary.ipynb
+[I 2026-05-17 22:29:18.518 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-17 22:29:48.609 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-17 22:53:59.869 ServerApp] Starting buffering for 185893d0-7876-4656-a674-c89bb0587aba:c68af746-6556-409e-836f-0f78c26ecdfd
+[I 2026-05-17 22:53:59.871 ServerApp] Starting buffering for 89f1114f-1307-4295-9d14-23c1148460d8:e64aaa3b-2a77-4f35-8082-489e87cb6241
+[I 2026-05-17 22:53:59.872 ServerApp] Starting buffering for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:603279ae-6707-4f33-b03f-017cd8c10710
