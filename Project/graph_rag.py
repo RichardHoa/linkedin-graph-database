@@ -20,8 +20,8 @@ AUTH = ("neo4j", os.getenv("NEO4J_SECRET"))
 DB_NAME = "neo4j"
 
 INTENT_MODEL = "hf.co/mradermacher/text-to-cypher-Gemma-3-27B-Instruct-2025.04.0-i1-GGUF:Q4_K_S"
-TRANSFORM_MODEL = "qwen3-coder:30b"
-CHAT_MODEL = "gemma3:27b"
+TRANSFORM_MODEL = "gpt-5.4-mini"
+CHAT_MODEL = "gpt-5.4-mini"
 EMBED_MODEL = "mxbai-embed-large"
 
 driver = GraphDatabase.driver(URI, auth=AUTH)
@@ -36,6 +36,13 @@ class GraphRAGPipeline:
         self.api_url = "https://apollo.quocanmeomeo.io.vn/v1/chat/completions"
         self.api_headers = {
             "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        self.gpt_api_key = os.getenv("GPT_API_KEY")
+        self.gpt_api_url = "https://api.openai.com/v1/chat/completions"
+        self.gpt_api_headers = {
+            "Authorization": f"Bearer {self.gpt_api_key}",
             "Content-Type": "application/json",
         }
 
@@ -218,6 +225,13 @@ class GraphRAGPipeline:
         if not processed_messages and system_content:
              processed_messages.append({"role": "user", "content": system_content})
 
+        if model.startswith("gpt-"):
+            req_url = self.gpt_api_url
+            req_headers = self.gpt_api_headers
+        else:
+            req_url = self.api_url
+            req_headers = self.api_headers
+
         try:
             data = {
                 "model": model,
@@ -227,7 +241,7 @@ class GraphRAGPipeline:
             }
             print(data)
             response = requests.post(
-                self.api_url, headers=self.api_headers, json=data, timeout=30
+                req_url, headers=req_headers, json=data, timeout=30
             )
             response.raise_for_status()
             result = response.json()
