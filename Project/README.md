@@ -13,12 +13,7 @@ A simple Flask + Vanilla JS chat application.
 2. **Install Dependencies:**
    `pip install -r requirements.txt`
 3. **Run the App:**
-   `python main.py`
+   `python server.py`
 
-
-- [x] Chat model to govern the whole chat, greet the user, and format final responses.
-- [x] Coder model for converting standard Cypher queries to embedding-based vector searches.
-- [] cache schema, list all the enums if possible to the schema, and cache that to a txt file
-- [] check syntax and and other cyver check ater the instruct model, if oke, then pass, if not okay rerun the model until pass (max 5 times), do the same thing with embedding query
 
 
