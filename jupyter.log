@@ -282,3 +282,192 @@ ValueError: not enough values to unpack (expected at least 1, got 0)
 [I 2026-05-17 22:53:59.869 ServerApp] Starting buffering for 185893d0-7876-4656-a674-c89bb0587aba:c68af746-6556-409e-836f-0f78c26ecdfd
 [I 2026-05-17 22:53:59.871 ServerApp] Starting buffering for 89f1114f-1307-4295-9d14-23c1148460d8:e64aaa3b-2a77-4f35-8082-489e87cb6241
 [I 2026-05-17 22:53:59.872 ServerApp] Starting buffering for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:603279ae-6707-4f33-b03f-017cd8c10710
+[I 2026-05-27 11:16:41.419 ServerApp] Adapting from protocol version 5.3 (kernel 89f1114f-1307-4295-9d14-23c1148460d8) to 5.4 (client).
+[I 2026-05-27 11:16:41.420 ServerApp] Connecting to kernel 89f1114f-1307-4295-9d14-23c1148460d8.
+[I 2026-05-27 11:16:41.458 ServerApp] Adapting from protocol version 5.3 (kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1) to 5.4 (client).
+[I 2026-05-27 11:16:41.459 ServerApp] Connecting to kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1.
+[I 2026-05-27 11:16:41.505 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-27 11:16:41.507 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[I 2026-05-27 11:16:41.659 ServerApp] Starting buffering for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:cbbc7cf8-b450-4c96-bede-2fcf096ac466
+[I 2026-05-27 11:16:41.660 ServerApp] Starting buffering for 89f1114f-1307-4295-9d14-23c1148460d8:8a0a4c3c-4523-45b6-8bb2-e15dde7feba9
+[I 2026-05-27 11:16:41.672 ServerApp] Starting buffering for 185893d0-7876-4656-a674-c89bb0587aba:38caf2f2-0d4e-4cc6-baeb-a05dde8c1185
+[W 2026-05-27 11:16:41.746 LabApp] The extension "jupyterlab-dash" is outdated.
+    
+[I 2026-05-27 11:16:41.747 LabApp] Build is up to date
+[I 2026-05-27 11:16:43.191 ServerApp] Adapting from protocol version 5.3 (kernel 89f1114f-1307-4295-9d14-23c1148460d8) to 5.4 (client).
+[I 2026-05-27 11:16:43.193 ServerApp] Connecting to kernel 89f1114f-1307-4295-9d14-23c1148460d8.
+[I 2026-05-27 11:16:43.367 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-27 11:16:43.368 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[I 2026-05-27 11:16:43.563 ServerApp] Adapting from protocol version 5.3 (kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1) to 5.4 (client).
+[I 2026-05-27 11:16:43.564 ServerApp] Connecting to kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1.
+[I 2026-05-27 11:17:42.759 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:21:17.491 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:21:31.833 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:22:02.482 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:23:45.541 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:24:16.512 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:25:48.267 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:26:11.859 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:26:27.163 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:26:57.488 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:27:09.534 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:27:40.483 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:28:09.492 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:28:15.639 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:30:39.615 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:31:09.842 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:33:06.661 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:33:37.471 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:37:30.933 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:38:01.015 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:38:03.430 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:38:34.471 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:38:45.255 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:39:15.477 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:47:49.603 ServerApp] Creating new notebook in /notebooks/Career Services Work
+[I 2026-05-27 11:47:49.827 ServerApp] Kernel started: 50a3a3ce-09c1-4399-9771-89da966f03bb
+[I 2026-05-27 11:47:50.503 ServerApp] Adapting from protocol version 5.3 (kernel 50a3a3ce-09c1-4399-9771-89da966f03bb) to 5.4 (client).
+[I 2026-05-27 11:47:50.504 ServerApp] Connecting to kernel 50a3a3ce-09c1-4399-9771-89da966f03bb.
+[I 2026-05-27 11:47:54.532 ServerApp] Saving file at /notebooks/Career Services Work/Untitled.ipynb
+[I 2026-05-27 11:48:00.607 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:48:18.896 ServerApp] Saving file at /notebooks/Career Services Work/visualization.ipynb
+[I 2026-05-27 11:48:30.837 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:48:47.125 ServerApp] Saving file at /notebooks/Career Services Work/visualization.ipynb
+[I 2026-05-27 11:49:00.919 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:49:25.330 ServerApp] Saving file at /notebooks/Career Services Work/visualization.ipynb
+[I 2026-05-27 11:49:31.013 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 11:49:48.443 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[W 2026-05-27 11:49:57.162 ServerApp] delete /notebooks/Career Services Work/other_degrees_top_institutions.png
+[W 2026-05-27 11:49:57.164 ServerApp] delete /notebooks/Career Services Work/output.csv
+[W 2026-05-27 11:49:57.166 ServerApp] delete /notebooks/Career Services Work/top_100_universities.csv
+[W 2026-05-27 11:50:12.239 ServerApp] delete /notebooks/Career Services Work/bachelor_top_institutions.png
+[W 2026-05-27 11:50:12.241 ServerApp] delete /notebooks/Career Services Work/dataset_structure.html
+[W 2026-05-27 11:50:12.244 ServerApp] delete /notebooks/Career Services Work/degree_distribution.png
+[W 2026-05-27 11:50:12.245 ServerApp] delete /notebooks/Career Services Work/education_completeness_chart.png
+[I 2026-05-27 11:50:39.950 ServerApp] Starting buffering for 50a3a3ce-09c1-4399-9771-89da966f03bb:713bddf8-3d0f-48c8-b745-8aea1fe20594
+[I 2026-05-27 11:50:39.951 ServerApp] Starting buffering for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:421461ed-40be-48a1-b31f-52a76b83b694
+[I 2026-05-27 11:50:39.951 ServerApp] Starting buffering for 185893d0-7876-4656-a674-c89bb0587aba:d0e239a1-86e7-4ba9-8e5c-5a8616b15324
+[I 2026-05-27 11:50:39.952 ServerApp] Starting buffering for 89f1114f-1307-4295-9d14-23c1148460d8:cc5e7376-9be4-4ce1-974c-7731e607adef
+[I 2026-05-27 11:50:40.365 ServerApp] Adapting from protocol version 5.3 (kernel 50a3a3ce-09c1-4399-9771-89da966f03bb) to 5.4 (client).
+[I 2026-05-27 11:50:40.366 ServerApp] Connecting to kernel 50a3a3ce-09c1-4399-9771-89da966f03bb.
+[I 2026-05-27 11:50:40.366 ServerApp] Restoring connection for 50a3a3ce-09c1-4399-9771-89da966f03bb:713bddf8-3d0f-48c8-b745-8aea1fe20594
+[I 2026-05-27 11:50:40.564 ServerApp] Adapting from protocol version 5.3 (kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1) to 5.4 (client).
+[I 2026-05-27 11:50:40.565 ServerApp] Connecting to kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1.
+[I 2026-05-27 11:50:40.565 ServerApp] Restoring connection for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:421461ed-40be-48a1-b31f-52a76b83b694
+[W 2026-05-27 11:52:10.370 ServerApp] WebSocket ping timeout after 90004 ms.
+[W 2026-05-27 11:52:10.566 ServerApp] WebSocket ping timeout after 90001 ms.
+[I 2026-05-27 11:52:15.374 ServerApp] Starting buffering for 50a3a3ce-09c1-4399-9771-89da966f03bb:713bddf8-3d0f-48c8-b745-8aea1fe20594
+[I 2026-05-27 11:52:15.568 ServerApp] Starting buffering for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:421461ed-40be-48a1-b31f-52a76b83b694
+[I 2026-05-27 14:18:08.416 ServerApp] Adapting from protocol version 5.3 (kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1) to 5.4 (client).
+[I 2026-05-27 14:18:08.418 ServerApp] Connecting to kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1.
+[I 2026-05-27 14:18:08.418 ServerApp] Restoring connection for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:421461ed-40be-48a1-b31f-52a76b83b694
+[I 2026-05-27 14:18:13.360 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-27 14:18:13.361 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[I 2026-05-27 14:18:13.361 ServerApp] Restoring connection for 185893d0-7876-4656-a674-c89bb0587aba:d0e239a1-86e7-4ba9-8e5c-5a8616b15324
+[I 2026-05-27 14:18:19.399 ServerApp] Adapting from protocol version 5.3 (kernel 50a3a3ce-09c1-4399-9771-89da966f03bb) to 5.4 (client).
+[I 2026-05-27 14:18:19.400 ServerApp] Connecting to kernel 50a3a3ce-09c1-4399-9771-89da966f03bb.
+[I 2026-05-27 14:18:19.400 ServerApp] Restoring connection for 50a3a3ce-09c1-4399-9771-89da966f03bb:713bddf8-3d0f-48c8-b745-8aea1fe20594
+[I 2026-05-27 14:18:19.577 ServerApp] Adapting from protocol version 5.3 (kernel 89f1114f-1307-4295-9d14-23c1148460d8) to 5.4 (client).
+[I 2026-05-27 14:18:19.578 ServerApp] Connecting to kernel 89f1114f-1307-4295-9d14-23c1148460d8.
+[I 2026-05-27 14:18:19.578 ServerApp] Restoring connection for 89f1114f-1307-4295-9d14-23c1148460d8:cc5e7376-9be4-4ce1-974c-7731e607adef
+[I 2026-05-27 14:32:53.587 ServerApp] Starting buffering for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:421461ed-40be-48a1-b31f-52a76b83b694
+[I 2026-05-27 14:32:53.588 ServerApp] Starting buffering for 185893d0-7876-4656-a674-c89bb0587aba:d0e239a1-86e7-4ba9-8e5c-5a8616b15324
+[I 2026-05-27 14:32:53.588 ServerApp] Starting buffering for 50a3a3ce-09c1-4399-9771-89da966f03bb:713bddf8-3d0f-48c8-b745-8aea1fe20594
+[I 2026-05-27 14:32:53.589 ServerApp] Starting buffering for 89f1114f-1307-4295-9d14-23c1148460d8:cc5e7376-9be4-4ce1-974c-7731e607adef
+[I 2026-05-27 14:32:58.990 ServerApp] Adapting from protocol version 5.3 (kernel 89f1114f-1307-4295-9d14-23c1148460d8) to 5.4 (client).
+[I 2026-05-27 14:32:59.014 ServerApp] Connecting to kernel 89f1114f-1307-4295-9d14-23c1148460d8.
+[I 2026-05-27 14:32:59.071 ServerApp] Starting buffering for 89f1114f-1307-4295-9d14-23c1148460d8:713572f9-36f7-4af2-9dcc-57e1f8aa7707
+[I 2026-05-27 14:32:59.073 ServerApp] Adapting from protocol version 5.3 (kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1) to 5.4 (client).
+[I 2026-05-27 14:32:59.074 ServerApp] Connecting to kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1.
+[I 2026-05-27 14:32:59.371 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-27 14:32:59.372 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[W 2026-05-27 14:32:59.384 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/output.csv?content=0&hash=0&1779867179119 (e8af7aedad784418a5d4b0ca2f88f47f@100.84.182.234) 7.37ms referer=http://linkedingraphdatabase:8888/lab/tree/notebooks/Career%20Services%20Work/visualization.ipynb
+[W 2026-05-27 14:32:59.384 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/output.csv?content=0&hash=0&1779867179119 (100.84.182.234): No such file or directory: notebooks/Career Services Work/output.csv
+[W 2026-05-27 14:32:59.386 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/Untitled.ipynb?content=0&hash=0&1779867179119 (e8af7aedad784418a5d4b0ca2f88f47f@100.84.182.234) 1.46ms referer=http://linkedingraphdatabase:8888/lab/tree/notebooks/Career%20Services%20Work/visualization.ipynb
+[W 2026-05-27 14:32:59.386 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/Untitled.ipynb?content=0&hash=0&1779867179119 (100.84.182.234): No such file or directory: notebooks/Career Services Work/Untitled.ipynb
+[I 2026-05-27 14:32:59.390 ServerApp] Starting buffering for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:be559afa-e742-452f-bdc3-ba02c74a44bf
+[W 2026-05-27 14:32:59.407 LabApp] The extension "jupyterlab-dash" is outdated.
+    
+[W 2026-05-27 14:32:59.408 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/other_degrees_top_institutions.png?content=0&hash=0&1779867179119 (e8af7aedad784418a5d4b0ca2f88f47f@100.84.182.234) 2.73ms referer=http://linkedingraphdatabase:8888/lab/tree/notebooks/Career%20Services%20Work/visualization.ipynb
+[W 2026-05-27 14:32:59.408 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/other_degrees_top_institutions.png?content=0&hash=0&1779867179119 (100.84.182.234): No such file or directory: notebooks/Career Services Work/other_degrees_top_institutions.png
+[W 2026-05-27 14:32:59.409 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/dataset_structure.html?content=0&hash=0&1779867179119 (e8af7aedad784418a5d4b0ca2f88f47f@100.84.182.234) 3.36ms referer=http://linkedingraphdatabase:8888/lab/tree/notebooks/Career%20Services%20Work/visualization.ipynb
+[W 2026-05-27 14:32:59.409 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/dataset_structure.html?content=0&hash=0&1779867179119 (100.84.182.234): No such file or directory: notebooks/Career Services Work/dataset_structure.html
+[I 2026-05-27 14:32:59.412 LabApp] Build is up to date
+[W 2026-05-27 14:32:59.415 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/top_100_universities.csv?content=0&hash=0&1779867179119 (e8af7aedad784418a5d4b0ca2f88f47f@100.84.182.234) 2.33ms referer=http://linkedingraphdatabase:8888/lab/tree/notebooks/Career%20Services%20Work/visualization.ipynb
+[W 2026-05-27 14:32:59.415 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/top_100_universities.csv?content=0&hash=0&1779867179119 (100.84.182.234): No such file or directory: notebooks/Career Services Work/top_100_universities.csv
+[I 2026-05-27 14:32:59.631 ServerApp] Adapting from protocol version 5.3 (kernel 50a3a3ce-09c1-4399-9771-89da966f03bb) to 5.4 (client).
+[I 2026-05-27 14:32:59.632 ServerApp] Connecting to kernel 50a3a3ce-09c1-4399-9771-89da966f03bb.
+[I 2026-05-27 14:32:59.656 ServerApp] Starting buffering for 185893d0-7876-4656-a674-c89bb0587aba:f7a4d83a-45e7-46a7-b13d-859a8620ffaa
+[W 2026-05-27 14:32:59.657 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/output.csv?content=0&hash=0&1779867179119 (e8af7aedad784418a5d4b0ca2f88f47f@100.84.182.234) 1.75ms referer=http://linkedingraphdatabase:8888/lab/tree/notebooks/Career%20Services%20Work/visualization.ipynb
+[W 2026-05-27 14:32:59.657 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/output.csv?content=0&hash=0&1779867179119 (100.84.182.234): No such file or directory: notebooks/Career Services Work/output.csv
+[W 2026-05-27 14:32:59.658 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/dataset_structure.html?content=0&hash=0&1779867179119 (e8af7aedad784418a5d4b0ca2f88f47f@100.84.182.234) 2.40ms referer=http://linkedingraphdatabase:8888/lab/tree/notebooks/Career%20Services%20Work/visualization.ipynb
+[W 2026-05-27 14:32:59.658 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/dataset_structure.html?content=0&hash=0&1779867179119 (100.84.182.234): No such file or directory: notebooks/Career Services Work/dataset_structure.html
+[W 2026-05-27 14:32:59.660 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/top_100_universities.csv?content=0&hash=0&1779867179119 (e8af7aedad784418a5d4b0ca2f88f47f@100.84.182.234) 1.22ms referer=http://linkedingraphdatabase:8888/lab/tree/notebooks/Career%20Services%20Work/visualization.ipynb
+[W 2026-05-27 14:32:59.660 ServerApp] 404 GET /api/contents/notebooks/Career%20Services%20Work/top_100_universities.csv?content=0&hash=0&1779867179119 (100.84.182.234): No such file or directory: notebooks/Career Services Work/top_100_universities.csv
+[I 2026-05-27 14:33:00.616 ServerApp] Starting buffering for 50a3a3ce-09c1-4399-9771-89da966f03bb:2086bf9d-67c0-4d1d-8bd3-d0ad998d5775
+[I 2026-05-27 14:33:01.203 ServerApp] Adapting from protocol version 5.3 (kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1) to 5.4 (client).
+[I 2026-05-27 14:33:01.204 ServerApp] Connecting to kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1.
+[I 2026-05-27 14:33:01.279 ServerApp] Adapting from protocol version 5.3 (kernel 50a3a3ce-09c1-4399-9771-89da966f03bb) to 5.4 (client).
+[I 2026-05-27 14:33:01.280 ServerApp] Connecting to kernel 50a3a3ce-09c1-4399-9771-89da966f03bb.
+[I 2026-05-27 14:33:01.326 ServerApp] Adapting from protocol version 5.3 (kernel 89f1114f-1307-4295-9d14-23c1148460d8) to 5.4 (client).
+[I 2026-05-27 14:33:01.328 ServerApp] Connecting to kernel 89f1114f-1307-4295-9d14-23c1148460d8.
+[I 2026-05-27 14:33:01.387 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-27 14:33:01.388 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[I 2026-05-27 15:45:39.250 ServerApp] Starting buffering for 185893d0-7876-4656-a674-c89bb0587aba:bc276d34-6008-4137-a7c4-02829f1e3606
+[I 2026-05-27 15:45:39.252 ServerApp] Starting buffering for 50a3a3ce-09c1-4399-9771-89da966f03bb:4a1e7e0d-d876-4df6-a42d-04dda53f7c77
+[I 2026-05-27 15:45:39.253 ServerApp] Starting buffering for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:3999517e-bca2-49b4-9176-a4ad36a5f8a8
+[I 2026-05-27 15:45:39.253 ServerApp] Starting buffering for 89f1114f-1307-4295-9d14-23c1148460d8:8a22655b-611d-4ecb-bbc6-f2b82dea8507
+[I 2026-05-27 21:46:02.196 ServerApp] Adapting from protocol version 5.3 (kernel 89f1114f-1307-4295-9d14-23c1148460d8) to 5.4 (client).
+[I 2026-05-27 21:46:02.199 ServerApp] Connecting to kernel 89f1114f-1307-4295-9d14-23c1148460d8.
+[I 2026-05-27 21:46:02.255 ServerApp] Adapting from protocol version 5.3 (kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1) to 5.4 (client).
+[I 2026-05-27 21:46:02.259 ServerApp] Connecting to kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1.
+[I 2026-05-27 21:46:02.294 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-27 21:46:02.295 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[I 2026-05-27 21:46:02.323 ServerApp] Starting buffering for 89f1114f-1307-4295-9d14-23c1148460d8:9c253cfe-d251-4528-8877-e8afa704a26a
+[I 2026-05-27 21:46:02.333 ServerApp] Adapting from protocol version 5.3 (kernel 50a3a3ce-09c1-4399-9771-89da966f03bb) to 5.4 (client).
+[I 2026-05-27 21:46:02.333 ServerApp] Connecting to kernel 50a3a3ce-09c1-4399-9771-89da966f03bb.
+[I 2026-05-27 21:46:02.356 ServerApp] Starting buffering for 0f0a92bd-60be-431f-9185-aa7388e6bbd1:b38e512c-e2cc-40b2-bbb8-9170a6f9ce43
+[I 2026-05-27 21:46:02.383 ServerApp] Starting buffering for 50a3a3ce-09c1-4399-9771-89da966f03bb:59a147db-dd0d-48ee-87f8-0fdc020d0b85
+[I 2026-05-27 21:46:02.393 ServerApp] Starting buffering for 185893d0-7876-4656-a674-c89bb0587aba:7abb7f57-da08-42a3-9016-64d2a159d7be
+[W 2026-05-27 21:46:02.594 LabApp] The extension "jupyterlab-dash" is outdated.
+    
+[I 2026-05-27 21:46:02.602 LabApp] Build is up to date
+[I 2026-05-27 21:46:02.881 ServerApp] Adapting from protocol version 5.3 (kernel 185893d0-7876-4656-a674-c89bb0587aba) to 5.4 (client).
+[I 2026-05-27 21:46:02.883 ServerApp] Connecting to kernel 185893d0-7876-4656-a674-c89bb0587aba.
+[I 2026-05-27 21:46:02.922 ServerApp] Adapting from protocol version 5.3 (kernel 89f1114f-1307-4295-9d14-23c1148460d8) to 5.4 (client).
+[I 2026-05-27 21:46:02.924 ServerApp] Connecting to kernel 89f1114f-1307-4295-9d14-23c1148460d8.
+[I 2026-05-27 21:46:02.970 ServerApp] Adapting from protocol version 5.3 (kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1) to 5.4 (client).
+[I 2026-05-27 21:46:02.971 ServerApp] Connecting to kernel 0f0a92bd-60be-431f-9185-aa7388e6bbd1.
+[I 2026-05-27 21:46:03.013 ServerApp] Adapting from protocol version 5.3 (kernel 50a3a3ce-09c1-4399-9771-89da966f03bb) to 5.4 (client).
+[I 2026-05-27 21:46:03.015 ServerApp] Connecting to kernel 50a3a3ce-09c1-4399-9771-89da966f03bb.
+[I 2026-05-27 21:56:47.567 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 21:56:51.516 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 21:57:21.603 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 22:00:23.703 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 22:00:26.605 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 22:00:48.058 ServerApp] Saving file at /notebooks/Career Services Work/dictionary.ipynb
+[W 2026-05-27 22:00:55.509 ServerApp] delete /notebooks/Career Services Work/filter_structure.json
+[I 2026-05-27 22:00:56.703 ServerApp] Saving file at /notebooks/Career Services Work/main.ipynb
+[I 2026-05-27 22:01:18.151 ServerApp] Saving file at /notebooks/Career Services Work/dictionary.ipynb
+[W 2026-05-27 22:05:46.498 ServerApp] delete /notebooks/Career Services Work/fresh-grad-filter.csv
+[I 2026-05-27 22:06:06.770 ServerApp] Saving file at /notebooks/Career Services Work/dictionary.ipynb
+[I 2026-05-27 22:07:28.992 ServerApp] Kernel started: 38eda7a4-dbd5-416c-84c0-ad5be11ecd6d
+[I 2026-05-27 22:07:29.633 ServerApp] Adapting from protocol version 5.3 (kernel 38eda7a4-dbd5-416c-84c0-ad5be11ecd6d) to 5.4 (client).
+[I 2026-05-27 22:07:29.635 ServerApp] Connecting to kernel 38eda7a4-dbd5-416c-84c0-ad5be11ecd6d.
+[I 2026-05-27 22:21:15.717 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:21:45.828 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:21:50.605 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:21:57.026 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:22:20.708 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:22:54.312 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:23:17.815 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:23:47.915 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[W 2026-05-27 22:23:56.951 ServerApp] delete /Data/fresh-grad-filter.csv
+[W 2026-05-27 22:24:01.152 ServerApp] delete /Data/dataset_structure.html
+[W 2026-05-27 22:24:01.155 ServerApp] delete /Data/filter_structure.json
+[I 2026-05-27 22:24:25.287 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:24:55.689 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:25:38.874 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:25:46.750 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:26:18.689 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
+[I 2026-05-27 22:56:45.689 ServerApp] Saving file at /notebooks/neo4j-data-import.ipynb
